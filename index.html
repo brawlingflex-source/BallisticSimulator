@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e3a5c">
+<title>Новогодний чат с Дедом Морозом 🎅</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lobster&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* -------- Тема пользователя (голубой Новый год) -------- */
+    --bg1:#0b2a4a;
+    --bg2:#123f6b;
+    --bg3:#1c5a8f;
+    --accent:#2f9cf0;
+    --accent2:#64b5f6;
+    --accent3:#a8d8ff;
+    --gold:#ffd54f;
+    --gold2:#ffb300;
+    --bubble-own-a:#2f9cf0;
+    --bubble-own-b:#1565c0;
+    --bubble-other:#ffffff;
+    --text:#eaf6ff;
+    --text-soft:#bfe0ff;
+    --muted:#8fb9d9;
+    --surface:rgba(255,255,255,.14);
+    --surface-2:rgba(255,255,255,.22);
+    --border:rgba(255,255,255,.22);
+    --shadow:0 24px 70px rgba(0,0,0,.45);
+    --danger:#ff5c5c;
+    --glow-a:rgba(80,180,255,.55);
+    --glow-b:rgba(255,210,120,.25);
+    --rx:0deg; --ry:0deg;
+  }
+  body.mode-santa{
+    /* -------- Тема Деда Мороза (красный Новый год) -------- */
+    --bg1:#4a0b0b;
+    --bg2:#6b1220;
+    --bg3:#8f1d2c;
+    --accent:#ff5c6c;
+    --accent2:#ff8a94;
+    --accent3:#ffc1c6;
+    --gold:#ffd54f;
+    --gold2:#ffb300;
+    --bubble-own-a:#e53935;
+    --bubble-own-b:#9e1218;
+    --bubble-other:#fff6f2;
+    --text:#fff1ef;
+    --text-soft:#ffd6d3;
+    --muted:#e6a9a5;
+    --surface:rgba(255,255,255,.12);
+    --surface-2:rgba(255,255,255,.2);
+    --border:rgba(255,255,255,.22);
+    --shadow:0 24px 70px rgba(40,0,0,.5);
+    --danger:#ffd54f;
+    --glow-a:rgba(255,120,110,.5);
+    --glow-b:rgba(255,220,120,.3);
+  }
+  body.in-chat .santa-anchor{
+    justify-content:flex-end;
+    align-items:flex-start;
+    padding:18px 24px 0 0;
+    --santa-opacity:.5;
+    --santa-scale:.66;
+    --santa-w:clamp(190px, 38vw, 290px);
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:'Nunito',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--text);
+    overflow:hidden;
+    background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 45%,var(--bg3) 100%);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    transition:background 1s ease;
+  }
+  button{font-family:inherit;touch-action:manipulation;cursor:pointer;border:none;background:none;color:inherit}
+  input,textarea{font-family:inherit}
+  .hidden{display:none!important}
+
+  /* ============ Фоновые слои ============ */
+  #sky{
+    position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  }
+  .glow{
+    position:absolute;border-radius:50%;filter:blur(80px);opacity:.8;
+    animation:drift 18s ease-in-out infinite;
+  }
+  .glow.a{width:60vw;height:60vw;left:-15vw;top:-20vw;background:radial-gradient(circle,var(--glow-a),transparent 70%)}
+  .glow.b{width:55vw;height:55vw;right:-15vw;bottom:-20vw;background:radial-gradient(circle,var(--glow-b),transparent 70%);animation-delay:-9s}
+  @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(4vw,3vh) scale(1.12)}}
+
+  #snow{position:fixed;inset:0;z-index:2;pointer-events:none}
+
+  /* ============ 3D Дед Мороз ============ */
+  .santa-anchor{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    display:flex;align-items:center;justify-content:center;
+    --santa-opacity:.92;--santa-scale:1;--santa-x:0%;--santa-y:0%;
+    --santa-w:clamp(220px,46vw,350px);
+  }
+  .santa-tilt{
+    transform:rotateX(var(--rx)) rotateY(var(--ry));
+    transform-style:preserve-3d;
+    transition:transform .25s ease-out;
+    will-change:transform;
+    opacity:var(--santa-opacity);
+  }
+  .santa-persp{perspective:1000px;transform-style:preserve-3d;transform:scale(var(--santa-scale)) translate(var(--santa-x),var(--santa-y))}
+  .santa-float{transform-style:preserve-3d;animation:floaty 6s ease-in-out infinite}
+  .santa-rotate{
+    position:relative;width:var(--santa-w);aspect-ratio:220/340;
+    transform-style:preserve-3d;
+    animation:turny 9s ease-in-out infinite;
+  }
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-22px)}}
+  @keyframes turny{0%,100%{transform:rotateY(-16deg)}50%{transform:rotateY(16deg)}}
+  .santa-layer{position:absolute;inset:0;width:100%;height:100%}
+  .layer-back{transform:translateZ(-48px)}
+  .layer-mid{transform:translateZ(0)}
+  .layer-front{transform:translateZ(48px)}
+  .santa-shadow{
+    position:absolute;left:50%;bottom:8%;width:70%;height:10%;
+    transform:translateX(-50%);border-radius:50%;
+    background:radial-gradient(ellipse,rgba(0,0,0,.35),transparent 70%);
+    filter:blur(8px);
+  }
+  .halo{
+    position:absolute;left:50%;top:8%;width:150%;height:120%;
+    transform:translateX(-50%);border-radius:50%;
+    background:radial-gradient(circle,rgba(255,240,200,.35),transparent 60%);
+    filter:blur(18px);z-index:-1;
+    animation:pulse 4s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:.55;transform:translateX(-50%) scale(1)}50%{opacity:.9;transform:translateX(-50%) scale(1.08)}}
+
+  /* ============ Экраны ============ */
+  .screen{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:18px}
+  .screen{transition:opacity .45s ease,transform .45s ease}
+  .screen.leaving{opacity:0;transform:scale(.97)}
+
+  /* ============ Экран приветствия ============ */
+  #welcome .card{
+    width:min(520px,100%);text-align:center;
+    background:var(--surface);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+    border:1px solid var(--border);border-radius:30px;
+    padding:clamp(26px,5vw,46px);box-shadow:var(--shadow);
+    position:relative;overflow:hidden;
+  }
+  #welcome .card::before{
+    content:"";position:absolute;inset:0;border-radius:30px;padding:1.5px;
+    background:linear-gradient(140deg,rgba(255,255,255,.55),transparent 35%,transparent 65%,var(--gold));
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;
+  }
+  .title-deco{font-size:clamp(30px,6vw,42px);letter-spacing:2px;animation:bob 3.4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
+  h1.brand{
+    font-family:'Lobster',cursive;font-weight:400;
+    font-size:clamp(34px,7vw,56px);line-height:1.05;margin:6px 0 4px;
+    color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.18),0 8px 26px rgba(0,0,0,.35);
+  }
+  h1.brand .accent{
+    background:linear-gradient(120deg,var(--gold),#fff 55%,var(--gold2));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .subtitle{color:var(--text-soft);font-size:clamp(15px,3.4vw,18px);font-weight:600;margin:4px 0 22px}
+  .field-label{display:block;text-align:left;font-weight:800;font-size:14px;color:var(--text-soft);margin:0 2px 8px;letter-spacing:.3px}
+  .name-input{
+    width:100%;padding:15px 18px;border-radius:16px;border:1px solid var(--border);
+    background:rgba(255,255,255,.14);color:#fff;font-size:17px;font-weight:700;outline:none;
+    transition:border-color .2s,box-shadow .2s,background .2s;
+  }
+  .name-input::placeholder{color:var(--muted);font-weight:600}
+  .name-input:focus{border-color:var(--accent2);background:rgba(255,255,255,.2);box-shadow:0 0 0 4px rgba(255,255,255,.12)}
+  .name-input.shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
+  .btn-start{
+    margin-top:20px;width:100%;padding:17px 20px;border-radius:18px;border:none;cursor:pointer;
+    background:linear-gradient(120deg,#ff5252 0%,#e53935 45%,#c62828 100%);
+    color:#fff;font-size:clamp(16px,3.6vw,19px);font-weight:900;letter-spacing:.2px;
+    box-shadow:0 12px 30px rgba(200,40,40,.5),inset 0 2px 0 rgba(255,255,255,.35);
+    position:relative;overflow:hidden;transition:transform .15s,box-shadow .2s,filter .2s;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .btn-start::after{
+    content:"";position:absolute;top:0;left:-70%;width:40%;height:100%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);
+    transform:skewX(-20deg);animation:shine 3.6s ease-in-out infinite;
+  }
+  @keyframes shine{0%{left:-70%}55%{left:130%}100%{left:130%}}
+  .btn-start:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(200,40,40,.6),inset 0 2px 0 rgba(255,255,255,.35);filter:brightness(1.05)}
+  .btn-start:active{transform:translateY(0) scale(.98)}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:16px;line-height:1.5}
+
+  /* ============ Экран чата ============ */
+  #chat{display:flex}
+  .chat-card{
+    width:min(760px,100%);height:min(880px,100%);max-height:100%;
+    display:flex;flex-direction:column;
+    background:var(--surface);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    border:1px solid var(--border);border-radius:26px;
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+
+  .chat-header{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;
+    background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
+    border-bottom:1px solid var(--border);
+  }
+  .icon-btn{
+    position:relative;
+    width:42px;height:42px;flex:0 0 auto;border-radius:13px;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.14);border:1px solid var(--border);font-size:20px;
+    transition:background .2s,transform .15s;
+  }
+  .icon-btn:hover{background:rgba(255,255,255,.24)}
+  .icon-btn:active{transform:scale(.94)}
+  .avatar{
+    width:46px;height:46px;flex:0 0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:26px;background:linear-gradient(140deg,var(--accent),var(--accent2));
+    box-shadow:inset 0 2px 4px rgba(255,255,255,.4),0 4px 12px rgba(0,0,0,.25);
+    border:2px solid rgba(255,255,255,.35);
+  }
+  .head-txt{flex:1;min-width:0}
+  .head-title{font-weight:900;font-size:17px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .head-sub{font-size:12.5px;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .badge{
+    position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--danger);
+    color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+
+  .santa-hint{
+    padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--gold);
+    background:rgba(0,0,0,.15);text-align:center;border-bottom:1px solid var(--border);
+  }
+
+  .messages{
+    flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:3px;
+    scroll-behavior:smooth;
+  }
+  .messages::-webkit-scrollbar{width:6px}
+  .messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:3px}
+
+  .date-sep{display:flex;align-items:center;gap:12px;margin:16px 0 10px;color:var(--text-soft)}
+  .date-sep::before,.date-sep::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+  .date-sep span{
+    font-size:12px;font-weight:800;padding:5px 14px;border-radius:999px;
+    background:rgba(255,255,255,.14);border:1px solid var(--border);white-space:nowrap;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+
+  .msg{display:flex;margin:2px 0;animation:pop .25s ease;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .msg.own{justify-content:flex-end}
+  .bubble-wrap{max-width:78%;display:flex;flex-direction:column}
+  .msg.own .bubble-wrap{align-items:flex-end}
+  .sender{font-size:12px;font-weight:800;color:var(--accent3);margin:0 4px 3px;padding-left:6px}
+  .bubble{
+    padding:10px 13px 7px;border-radius:18px;position:relative;
+    box-shadow:0 4px 14px rgba(0,0,0,.18);word-break:break-word;
+  }
+  .msg:not(.own) .bubble{background:var(--bubble-other);color:#22303c;border-bottom-left-radius:6px}
+  .msg.own .bubble{background:linear-gradient(135deg,var(--bubble-own-a),var(--bubble-own-b));color:#fff;border-bottom-right-radius:6px}
+  .bubble .text{font-size:15.5px;line-height:1.4;white-space:pre-wrap}
+  .bubble .time{font-size:11px;margin-top:4px;text-align:right;opacity:.7;font-weight:700}
+  .msg.own .bubble .time{color:rgba(255,255,255,.85)}
+  .msg.pressing .bubble{outline:2px solid var(--gold);outline-offset:2px}
+
+  .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-soft);text-align:center;padding:30px;gap:10px}
+  .empty-state .em{font-size:52px;animation:bob 3.4s ease-in-out infinite}
+  .empty-state .t{font-weight:800;font-size:17px}
+  .empty-state .s{font-size:13px;color:var(--muted)}
+
+  .chat-input-bar{
+    display:flex;align-items:center;gap:10px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--border);background:linear-gradient(0deg,rgba(0,0,0,.12),transparent);
+  }
+  .chat-input{
+    flex:1;padding:13px 18px;border-radius:999px;border:1px solid var(--border);
+    background:rgba(255,255,255,.14);color:#fff;font-size:16px;outline:none;
+    transition:border-color .2s,background .2s;
+  }
+  .chat-input::placeholder{color:var(--muted)}
+  .chat-input:focus{border-color:var(--accent2);background:rgba(255,255,255,.2)}
+  .send-btn{
+    width:50px;height:50px;flex:0 0 auto;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:22px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 18px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.35);
+    transition:transform .15s,filter .2s;
+  }
+  .send-btn:hover{filter:brightness(1.08)}
+  .send-btn:active{transform:scale(.92)}
+
+  /* ============ Панель пользователей (только Санта) ============ */
+  .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .3s}
+  .drawer-overlay.open{opacity:1;pointer-events:auto}
+  .presence-panel{
+    position:fixed;top:0;right:0;bottom:0;width:min(340px,88vw);z-index:41;
+    background:linear-gradient(180deg,var(--bg2),var(--bg3));
+    border-left:1px solid var(--border);box-shadow:-20px 0 50px rgba(0,0,0,.4);
+    transform:translateX(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);
+    display:flex;flex-direction:column;
+  }
+  .presence-panel.open{transform:translateX(0)}
+  .panel-head{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .panel-title{font-weight:900;font-size:17px}
+  .panel-title small{display:block;font-size:12px;color:var(--muted);font-weight:700}
+  .panel-list{flex:1;overflow-y:auto;padding:10px}
+  .user-row{
+    display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;margin-bottom:6px;
+    background:rgba(255,255,255,.1);border:1px solid var(--border);cursor:pointer;
+    transition:background .15s,transform .1s;
+    user-select:none;-webkit-user-select:none;
+  }
+  .user-row:hover{background:rgba(255,255,255,.18)}
+  .user-row:active{transform:scale(.98)}
+  .user-row.active{outline:2px solid var(--gold);outline-offset:-2px;background:rgba(255,255,255,.2)}
+  .user-row .dot{width:10px;height:10px;border-radius:50%;background:#6b7c8c;flex:0 0 auto}
+  .user-row.online .dot{background:#37e07a;box-shadow:0 0 10px #37e07a}
+  .u-name{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
+  .u-status{font-size:12px;color:var(--muted);font-weight:700}
+  .u-left{flex:1;min-width:0}
+  .u-open{font-size:12px;font-weight:800;color:var(--gold);white-space:nowrap;padding-left:6px}
+  .panel-empty{padding:30px 16px;text-align:center;color:var(--muted);font-weight:700}
+
+  /* ============ Меню удаления сообщения ============ */
+  .delete-menu{
+    position:fixed;z-index:60;padding:6px;border-radius:14px;
+    background:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);
+    animation:pop .18s ease;transform-origin:center;
+  }
+  .delete-menu button{
+    display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+    padding:11px 14px;border-radius:10px;font-size:14px;font-weight:800;color:#c62828;
+    white-space:nowrap;
+  }
+  .delete-menu button:hover{background:#ffeaea}
+
+  /* ============ Модалка подтверждения ============ */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  .modal-overlay.open{opacity:1;pointer-events:auto}
+  .modal{
+    width:min(380px,100%);background:#fff;color:#22303c;border-radius:22px;padding:24px;text-align:center;
+    box-shadow:0 24px 70px rgba(0,0,0,.5);transform:translateY(12px) scale(.97);transition:transform .25s;
+  }
+  .modal-overlay.open .modal{transform:none}
+  .modal .em{font-size:44px}
+  .modal h3{margin:10px 0 6px;font-size:19px;font-weight:900}
+  .modal p{margin:0 0 20px;color:#5b6b7a;font-size:14.5px;font-weight:600;line-height:1.5}
+  .modal-actions{display:flex;gap:10px}
+  .modal-actions button{flex:1;padding:13px;border-radius:13px;font-weight:900;font-size:15px;transition:filter .15s,transform .1s}
+  .modal-actions button:active{transform:scale(.97)}
+  .btn-cancel{background:#eef2f6;color:#445}
+  .btn-danger{background:linear-gradient(120deg,#ff5252,#c62828);color:#fff;box-shadow:0 8px 20px rgba(200,40,40,.35)}
+
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);z-index:80;
+    background:rgba(20,30,40,.92);color:#fff;padding:12px 20px;border-radius:14px;font-weight:800;font-size:14px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .3s;max-width:88vw;text-align:center;
+    pointer-events:none;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  .error-banner{
+    position:fixed;left:0;right:0;bottom:0;z-index:90;background:#7f1d1d;color:#fff;
+    padding:14px 18px;text-align:center;font-weight:800;font-size:14px;
+  }
+
+  /* ============ Адаптивность ============ */
+  @media (max-width:640px){
+    .screen{padding:12px}
+    #chat{padding:0}
+    .chat-card{border-radius:0;height:100%;max-height:100%;border:none}
+    .messages{padding:12px 10px}
+    .bubble-wrap{max-width:86%}
+    .bubble .text{font-size:15px}
+    .santa-anchor{--santa-w:clamp(190px,62vw,280px)}
+    body.in-chat .santa-anchor{--santa-w:clamp(170px,52vw,250px);padding:12px 14px 0 0}
+  }
+  @media (min-width:641px){
+    .chat-card{height:min(860px,94vh)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001s!important;animation-iteration-count:1!important}
+  }
+</style>
+</head>
+<body>
+  <!-- Фон -->
+  <div id="sky">
+    <div class="glow a"></div>
+    <div class="glow b"></div>
+  </div>
+
+  <!-- 3D Дед Мороз -->
+  <div class="santa-anchor">
+    <div class="santa-tilt">
+      <div class="santa-persp">
+        <div class="santa-float">
+          <div class="santa-rotate">
+            <div class="halo"></div>
+            <!-- Задний слой: мешок и плащ -->
+            <svg class="santa-layer layer-back" viewBox="0 0 220 340" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <ellipse cx="110" cy="180" rx="100" ry="120" fill="#a31621"/>
+              <ellipse cx="110" cy="180" rx="100" ry="120" fill="#000" opacity=".08" transform="translate(-6,8)"/>
+              <g>
+                <ellipse cx="184" cy="252" rx="34" ry="60" fill="#8a5a2b"/>
+                <ellipse cx="184" cy="192" rx="27" ry="15" fill="#7a4a21"/>
+                <path d="M158 196 Q184 174 210 196" stroke="#c9a15c" stroke-width="6" fill="none" stroke-linecap="round"/>
+                <rect x="170" y="236" width="28" height="28" rx="5" fill="#c9a15c"/>
+                <circle cx="184" cy="250" r="6" fill="#8a5a2b"/>
+              </g>
+            </svg>
+            <!-- Средний слой: тело -->
+            <svg class="santa-layer layer-mid" viewBox="0 0 220 340" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="70" y="300" width="30" height="32" rx="10" fill="#2b2b2b"/>
+              <rect x="120" y="300" width="30" height="32" rx="10" fill="#2b2b2b"/>
+              <path d="M64 190 Q40 210 32 246" stroke="#c62828" stroke-width="27" fill="none" stroke-linecap="round"/>
+              <path d="M156 190 Q178 168 182 132" stroke="#c62828" stroke-width="27" fill="none" stroke-linecap="round"/>
+              <rect x="60" y="160" width="100" height="150" rx="46" fill="#d62828"/>
+              <ellipse cx="110" cy="304" rx="52" ry="16" fill="#fff"/>
+              <rect x="60" y="228" width="100" height="18" fill="#2b2b2b"/>
+              <rect x="96" y="224" width="28" height="26" rx="5" fill="none" stroke="#f7c948" stroke-width="6"/>
+              <circle cx="110" cy="180" r="5" fill="#2b2b2b"/>
+              <circle cx="110" cy="204" r="5" fill="#2b2b2b"/>
+              <circle cx="32" cy="252" r="15" fill="#fff"/>
+              <circle cx="30" cy="268" r="11" fill="#b71c1c"/>
+              <circle cx="183" cy="126" r="15" fill="#fff"/>
+              <circle cx="186" cy="112" r="11" fill="#b71c1c"/>
+            </svg>
+            <!-- Передний слой: голова и шапка -->
+            <svg class="santa-layer layer-front" viewBox="0 0 220 340" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="110" cy="126" r="52" fill="#ffd9b3"/>
+              <circle cx="62" cy="128" r="12" fill="#ffc79e"/>
+              <circle cx="158" cy="128" r="12" fill="#ffc79e"/>
+              <circle cx="80" cy="140" r="12" fill="#ff9d9d" opacity=".55"/>
+              <circle cx="140" cy="140" r="12" fill="#ff9d9d" opacity=".55"/>
+              <ellipse cx="110" cy="160" rx="52" ry="48" fill="#fff"/>
+              <circle cx="70" cy="176" r="20" fill="#fff"/>
+              <circle cx="150" cy="176" r="20" fill="#fff"/>
+              <circle cx="110" cy="196" r="26" fill="#fff"/>
+              <circle cx="88" cy="196" r="18" fill="#fff"/>
+              <circle cx="132" cy="196" r="18" fill="#fff"/>
+              <ellipse cx="86" cy="138" rx="20" ry="10" fill="#fff" transform="rotate(16 86 138)"/>
+              <ellipse cx="134" cy="138" rx="20" ry="10" fill="#fff" transform="rotate(-16 134 138)"/>
+              <circle cx="90" cy="118" r="6" fill="#2b2b2b"/>
+              <circle cx="130" cy="118" r="6" fill="#2b2b2b"/>
+              <circle cx="92" cy="116" r="2.2" fill="#fff"/>
+              <circle cx="132" cy="116" r="2.2" fill="#fff"/>
+              <rect x="78" y="103" width="22" height="9" rx="4.5" fill="#fff"/>
+              <rect x="120" y="103" width="22" height="9" rx="4.5" fill="#fff"/>
+              <circle cx="110" cy="130" r="13" fill="#ff8a80"/>
+              <circle cx="106" cy="126" r="4" fill="#ff6f61" opacity=".7"/>
+              <rect x="54" y="82" width="112" height="26" rx="13" fill="#fff"/>
+              <path d="M56 84 C54 50 76 22 112 18 C148 22 166 52 164 84 Z" fill="#d62828"/>
+              <circle cx="112" cy="16" r="15" fill="#fff"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="santa-shadow"></div>
+    </div>
+  </div>
+
+  <canvas id="snow"></canvas>
+
+  <!-- ============ Экран приветствия ============ -->
+  <section id="welcome" class="screen">
+    <div class="card">
+      <div class="title-deco">🎄 ⛄ 🎄</div>
+      <h1 class="brand">С <span class="accent">Новым годом</span>!</h1>
+      <p class="subtitle">Привет! Я — Дед Мороз. 🎅<br>Загадывай желание — а сначала скажи, как тебя зовут?</p>
+      <label class="field-label" for="name-input">Твоё имя</label>
+      <input id="name-input" class="name-input" type="text" maxlength="30" placeholder="Введи своё имя..." autocomplete="off">
+      <button id="start-btn" class="btn-start">
+        <span>🎁</span><span>Начать чат с Дедом Морозом!</span><span>🎄</span>
+      </button>
+      <p class="hint">❄️ Самый волшебный чат этого Нового года ❄️</p>
+    </div>
+  </section>
+
+  <!-- ============ Экран чата ============ -->
+  <section id="chat" class="screen hidden">
+    <div class="chat-card">
+      <header class="chat-header">
+        <button class="icon-btn" id="back-btn" title="Назад">←</button>
+        <div class="avatar" id="chat-avatar">🎅</div>
+        <div class="head-txt">
+          <div class="head-title" id="chat-title">Дед Мороз</div>
+          <div class="head-sub" id="chat-sub">Новогодний чат ✨ · время МСК</div>
+        </div>
+        <button class="icon-btn hidden" id="clear-btn" title="Очистить весь чат">🗑️</button>
+        <button class="icon-btn hidden" id="users-btn" title="Пользователи">👥<span class="badge hidden" id="online-badge">0</span></button>
+      </header>
+
+      <div class="santa-hint hidden" id="santa-hint">🎅 Вы вошли как Дед Мороз — удерживайте сообщение, чтобы удалить его</div>
+
+      <div class="messages" id="messages"></div>
+
+      <div class="chat-input-bar">
+        <input class="chat-input" id="msg-input" type="text" placeholder="Сообщение..." autocomplete="off">
+        <button class="send-btn" id="send-btn" title="Отправить">➤</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Панель пользователей (Санта) -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <aside class="presence-panel" id="presence-panel">
+    <div class="panel-head">
+      <div class="panel-title">Пользователи<small id="panel-sub">Кто заходил в чат</small></div>
+      <button class="icon-btn" id="close-panel">✕</button>
+    </div>
+    <div class="panel-list" id="panel-list"></div>
+  </aside>
+
+  <!-- Меню удаления -->
+  <div class="delete-menu hidden" id="delete-menu">
+    <button id="delete-btn">🗑️ Удалить это сообщение</button>
+  </div>
+
+  <!-- Модалка подтверждения -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="em">⚠️</div>
+      <h3 id="modal-title">Вы уверены?</h3>
+      <p id="modal-text">Это действие нельзя отменить.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="modal-cancel">Отмена</button>
+        <button class="btn-danger" id="modal-ok">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+  (function(){
+    "use strict";
+
+    /* ---------- Firebase ---------- */
+    const firebaseConfig = {
+      apiKey: "AIzaSyAu_wfaRhTsWNbsyFYmEigopqJck7ynxlU",
+      authDomain: "messeger-0wo2h4.firebaseapp.com",
+      databaseURL: "https://messeger-0wo2h4-default-rtdb.firebaseio.com",
+      projectId: "messeger-0wo2h4",
+      storageBucket: "messeger-0wo2h4.firebasestorage.app",
+      messagingSenderId: "1057251395030",
+      appId: "1:1057251395030:web:86f8f718ed938055e29077"
+    };
+
+    let db = null;
+    try{
+      if(typeof firebase === 'undefined') throw new Error('Firebase SDK не загрузился');
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+    }catch(err){
+      const b = document.createElement('div');
+      b.className = 'error-banner';
+      b.textContent = '⚠️ Не удалось подключиться к базе данных (проверьте интернет).';
+      document.body.appendChild(b);
+    }
+
+    /* ---------- Утилиты ---------- */
+    const $ = s => document.querySelector(s);
+    const pad = n => String(n).padStart(2,'0');
+    const MSK = 'Europe/Moscow';
+    const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    const MONTHS_SHORT = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+
+    function mskParts(ts){
+      const d = new Date(ts);
+      const f = new Intl.DateTimeFormat('en-GB',{
+        timeZone:MSK, year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit', hour12:false, hourCycle:'h23'
+      });
+      const p = {};
+      for(const part of f.formatToParts(d)) p[part.type] = part.value;
+      return {y:+p.year, m:+p.month, d:+p.day, h:+p.hour, min:+p.minute};
+    }
+    function mskKey(ts){ const p = mskParts(ts); return p.y+'-'+p.m+'-'+p.d; }
+    function mskTime(ts){ const p = mskParts(ts); return pad(p.h)+':'+pad(p.min); }
+    function dateLabel(ts){
+      const p = mskParts(ts);
+      const key = mskKey(ts);
+      const todayKey = mskKey(Date.now());
+      const yestKey = mskKey(Date.now() - 86400000);
+      if(key === todayKey) return 'Сегодня';
+      if(key === yestKey) return 'Вчера';
+      return p.d + ' ' + MONTHS[p.m-1] + ' ' + p.y;
+    }
+    function shortWhen(ts){
+      if(!ts) return 'неизвестно';
+      const p = mskParts(ts);
+      return p.d + ' ' + MONTHS_SHORT[p.m-1] + ' ' + pad(p.h) + ':' + pad(p.min);
+    }
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function userKey(name){ return encodeURIComponent(String(name)).replace(/\./g, '%2E'); }
+
+    /* ---------- Состояние ---------- */
+    let currentName = '';
+    let isSanta = false;
+    let presenceRef = null;
+    let heartbeat = null;
+    let msgQuery = null;
+    let presenceCb = null;
+    const messages = new Map();
+    let stickBottom = true;
+    let activeUserKey = null;   // для Деда Мороза: чей чат сейчас открыт
+    let activeUserName = '';
+    let presenceEntries = [];
+
+    /* ---------- Сохранение сессии (localStorage + sessionStorage + cookie) ---------- */
+    const STORAGE_KEY = 'santaChatName_v1';
+    function rememberName(n){
+      const v = String(n);
+      try{ localStorage.setItem(STORAGE_KEY, v); }catch(e){}
+      try{ sessionStorage.setItem(STORAGE_KEY, v); }catch(e){}
+      try{ document.cookie = STORAGE_KEY + '=' + encodeURIComponent(v) + '; max-age=31536000; path=/; SameSite=Lax'; }catch(e){}
+    }
+    function forgetName(){
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+      try{ sessionStorage.removeItem(STORAGE_KEY); }catch(e){}
+      try{ document.cookie = STORAGE_KEY + '=; max-age=0; path=/'; }catch(e){}
+    }
+    function recallName(){
+      try{ const v = localStorage.getItem(STORAGE_KEY); if(v) return v; }catch(e){}
+      try{ const v = sessionStorage.getItem(STORAGE_KEY); if(v) return v; }catch(e){}
+      try{
+        const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + STORAGE_KEY + '=([^;]*)'));
+        if(m) return decodeURIComponent(m[1]);
+      }catch(e){}
+      return null;
+    }
+
+    /* ---------- DOM ---------- */
+    const welcomeScreen = $('#welcome');
+    const chatScreen = $('#chat');
+    const nameInput = $('#name-input');
+    const startBtn = $('#start-btn');
+    const backBtn = $('#back-btn');
+    const chatAvatar = $('#chat-avatar');
+    const chatTitle = $('#chat-title');
+    const chatSub = $('#chat-sub');
+    const clearBtn = $('#clear-btn');
+    const usersBtn = $('#users-btn');
+    const onlineBadge = $('#online-badge');
+    const santaHint = $('#santa-hint');
+    const messagesEl = $('#messages');
+    const msgInput = $('#msg-input');
+    const sendBtn = $('#send-btn');
+    const presencePanel = $('#presence-panel');
+    const drawerOverlay = $('#drawer-overlay');
+    const closePanel = $('#close-panel');
+    const panelList = $('#panel-list');
+    const panelSub = $('#panel-sub');
+    const deleteMenu = $('#delete-menu');
+    const deleteBtn = $('#delete-btn');
+    const modalOverlay = $('#modal-overlay');
+    const modalTitle = $('#modal-title');
+    const modalText = $('#modal-text');
+    const modalCancel = $('#modal-cancel');
+    const modalOk = $('#modal-ok');
+    const toastEl = $('#toast');
+
+    /* ---------- Снег + звёзды ---------- */
+    const canvas = $('#snow');
+    const ctx = canvas.getContext('2d');
+    let stars = [], flakes = [], W = 0, H = 0, DPR = 1;
+
+    function initSky(){
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W * DPR; canvas.height = H * DPR;
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      stars = [];
+      const sc = Math.round((W*H)/16000);
+      for(let i=0;i<sc;i++){
+        stars.push({x:Math.random()*W, y:Math.random()*H*0.9, r:0.5+Math.random()*1.7, ph:Math.random()*6.283});
+      }
+      flakes = [];
+      const fc = Math.round((W*H)/11000);
+      for(let i=0;i<fc;i++){
+        flakes.push(newFlake(true));
+      }
+    }
+    function newFlake(anywhere){
+      return {
+        x: Math.random()*W,
+        y: anywhere ? Math.random()*H : -20,
+        r: 1 + Math.random()*3.2,
+        sp: 0.4 + Math.random()*1.5,
+        dr: -0.3 + Math.random()*0.6,
+        sw: 0.4 + Math.random()*1.2,
+        ph: Math.random()*6.283,
+        a: 0.35 + Math.random()*0.6
+      };
+    }
+    let t0 = performance.now();
+    function drawSky(now){
+      const t = now - t0;
+      ctx.clearRect(0,0,W,H);
+      for(const s of stars){
+        const a = 0.25 + 0.75*Math.abs(Math.sin(t/1400 + s.ph));
+        ctx.globalAlpha = a;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      for(const f of flakes){
+        f.y += f.sp;
+        f.x += Math.sin(t/900 + f.ph)*f.sw + f.dr;
+        if(f.y > H + 20){ Object.assign(f, newFlake(false)); }
+        if(f.x < -20) f.x = W + 20; if(f.x > W + 20) f.x = -20;
+        ctx.globalAlpha = f.a;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(drawSky);
+    }
+
+    /* ---------- Параллакс (3D Санта) ---------- */
+    window.addEventListener('pointermove', e => {
+      const nx = (e.clientX / window.innerWidth - 0.5);
+      const ny = (e.clientY / window.innerHeight - 0.5);
+      document.documentElement.style.setProperty('--ry', (nx*14) + 'deg');
+      document.documentElement.style.setProperty('--rx', (-ny*12) + 'deg');
+    });
+
+    /* ---------- Экран приветствия ---------- */
+    startBtn.addEventListener('click', enterChat);
+    nameInput.addEventListener('keydown', e => { if(e.key === 'Enter') enterChat(); });
+
+    function enterChat(){
+      if(!db){ toast('⚠️ Нет подключения к базе данных — проверьте интернет и обновите страницу.'); return; }
+      const name = nameInput.value.trim();
+      if(!name){
+        nameInput.classList.remove('shake'); void nameInput.offsetWidth; nameInput.classList.add('shake');
+        nameInput.focus();
+        return;
+      }
+      startChat(name);
+    }
+
+    function startChat(name){
+      currentName = name;
+      isSanta = (name === 'Дед Мороз');
+      rememberName(name);
+      document.body.classList.toggle('mode-santa', isSanta);
+
+      // Настройка заголовка
+      if(isSanta){
+        chatAvatar.textContent = '🎅';
+        chatTitle.textContent = 'Дед Мороз';
+        chatSub.textContent = 'Выберите пользователя в панели 👥 · время МСК';
+        clearBtn.classList.remove('hidden');
+        usersBtn.classList.remove('hidden');
+        santaHint.classList.remove('hidden');
+      }else{
+        chatAvatar.textContent = '⛄';
+        chatTitle.textContent = 'Дед Мороз';
+        chatSub.textContent = 'Новогодний чат ✨ · время МСК';
+        clearBtn.classList.add('hidden');
+        usersBtn.classList.add('hidden');
+        santaHint.classList.add('hidden');
+      }
+
+      switchScreen(welcomeScreen, chatScreen);
+      document.body.classList.add('in-chat');
+
+      activeUserKey = null;
+      activeUserName = '';
+
+      // Присутствие
+      if(isSanta){
+        presenceCb = db.ref('presence').on('value', renderPresence);
+      }else{
+        startPresence(name);
+      }
+
+      attachMessages();
+
+      setTimeout(() => msgInput.focus(), 400);
+    }
+
+    function switchScreen(from, to){
+      from.classList.add('leaving');
+      setTimeout(() => {
+        from.classList.add('hidden');
+        from.classList.remove('leaving');
+        to.classList.remove('hidden');
+      }, 280);
+    }
+
+    function chatRoot(){
+      if(isSanta){
+        return activeUserKey ? ('chats/' + activeUserKey) : '';
+      }
+      return 'chats/' + userKey(currentName);
+    }
+
+    function attachMessages(){
+      if(msgQuery){ msgQuery.off(); msgQuery = null; }
+      messages.clear();
+      messagesEl.innerHTML = '';
+      stickBottom = true;
+      const root = chatRoot();
+      if(!root){
+        renderEmptyState('👥', 'Выберите пользователя', 'Откройте панель «Пользователи» и выберите, с кем пообщаться.');
+        return;
+      }
+      msgQuery = db.ref(root + '/messages').orderByChild('timestamp').limitToLast(200);
+      msgQuery.on('child_added', snap => {
+        messages.set(snap.key, Object.assign({id: snap.key}, snap.val()));
+        renderMessages();
+      });
+      msgQuery.on('child_changed', snap => {
+        messages.set(snap.key, Object.assign({id: snap.key}, snap.val()));
+        renderMessages();
+      });
+      msgQuery.on('child_removed', snap => {
+        messages.delete(snap.key);
+        renderMessages();
+      });
+      renderMessages();
+    }
+
+    function renderEmptyState(em, title, sub){
+      const e = document.createElement('div');
+      e.className = 'empty-state';
+      e.innerHTML = '<div class="em">' + em + '</div><div class="t">' + title + '</div><div class="s">' + sub + '</div>';
+      messagesEl.appendChild(e);
+    }
+
+    function selectUser(u, silent){
+      activeUserKey = userKey(u.name);
+      activeUserName = u.name;
+      chatSub.textContent = 'Чат с ' + u.name + ' · время МСК';
+      attachMessages();
+      if(!silent) toast('Чат с «' + u.name + '» открыт');
+    }
+
+    /* ---------- Выход ---------- */
+    backBtn.addEventListener('click', exitChat);
+    function exitChat(){
+      stopPresence();
+      if(msgQuery){ msgQuery.off(); msgQuery = null; }
+      if(isSanta && presenceCb){ db.ref('presence').off('value', presenceCb); presenceCb = null; }
+      messages.clear();
+      messagesEl.innerHTML = '';
+      isSanta = false;
+      currentName = '';
+      activeUserKey = null;
+      activeUserName = '';
+      forgetName();
+      document.body.classList.remove('mode-santa');
+      document.body.classList.remove('in-chat');
+      closePanelFn();
+      switchScreen(chatScreen, welcomeScreen);
+      nameInput.value = '';
+      setTimeout(() => nameInput.focus(), 400);
+    }
+
+    /* ---------- Присутствие ---------- */
+    function startPresence(name){
+      const key = userKey(name);
+      presenceRef = db.ref('presence/' + key);
+      const onlineData = { name: name, online: true, lastSeen: firebase.database.ServerValue.TIMESTAMP };
+      const offlineData = { name: name, online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP };
+      presenceRef.onDisconnect().set(offlineData);
+      presenceRef.set(onlineData);
+      heartbeat = setInterval(() => presenceRef.set(onlineData), 20000);
+    }
+    function stopPresence(){
+      if(heartbeat){ clearInterval(heartbeat); heartbeat = null; }
+      if(presenceRef){
+        presenceRef.onDisconnect().cancel();
+        presenceRef.set({ name: currentName, online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+        presenceRef = null;
+      }
+    }
+
+    function renderPresence(snap){
+      const data = snap.val() || {};
+      presenceEntries = Object.values(data).filter(u => u && u.name);
+      presenceEntries.sort((a,b) => {
+        if(!!a.online !== !!b.online) return a.online ? -1 : 1;
+        return (b.lastSeen || 0) - (a.lastSeen || 0);
+      });
+      let online = 0;
+      panelList.innerHTML = '';
+      if(!presenceEntries.length){
+        panelList.innerHTML = '<div class="panel-empty">Пока никто не заходил в чат 🎄</div>';
+        onlineBadge.classList.add('hidden');
+        panelSub.textContent = 'Пока никого нет';
+        return;
+      }
+      for(const u of presenceEntries){
+        if(u.online) online++;
+        const row = document.createElement('div');
+        row.className = 'user-row' + (u.online ? ' online' : '');
+        row.dataset.name = u.name;
+        if(isSanta && activeUserKey === userKey(u.name)) row.classList.add('active');
+
+        const left = document.createElement('div');
+        left.className = 'u-left';
+        const name = document.createElement('div');
+        name.className = 'u-name';
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        name.appendChild(dot);
+        name.appendChild(document.createTextNode(u.name));
+        const status = document.createElement('div');
+        status.className = 'u-status';
+        status.textContent = u.online ? 'в сети сейчас' : 'был(а) в сети: ' + shortWhen(u.lastSeen);
+        left.appendChild(name);
+        left.appendChild(status);
+        row.appendChild(left);
+
+        if(isSanta){
+          const open = document.createElement('span');
+          open.className = 'u-open';
+          open.textContent = 'Открыть ›';
+          row.appendChild(open);
+        }
+        panelList.appendChild(row);
+      }
+      onlineBadge.textContent = online;
+      onlineBadge.classList.remove('hidden');
+      panelSub.textContent = 'Онлайн: ' + online + ' · Всего: ' + presenceEntries.length;
+
+      // Автовыбор первого пользователя при первом входе
+      if(isSanta && !activeUserKey){
+        selectUser(presenceEntries[0], true);
+      }
+    }
+
+    /* ---------- Сообщения ---------- */
+    messagesEl.addEventListener('scroll', () => {
+      stickBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 90;
+    });
+
+    function renderMessages(){
+      messagesEl.innerHTML = '';
+      const sorted = Array.from(messages.values()).sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
+      if(!sorted.length){
+        const e = document.createElement('div');
+        e.className = 'empty-state';
+        e.innerHTML = '<div class="em">🎄</div><div class="t">Здесь пока тихо…</div><div class="s">Напишите первое новогоднее сообщение! (время — МСК)</div>';
+        messagesEl.appendChild(e);
+        return;
+      }
+      let lastKey = null;
+      for(const m of sorted){
+        const dk = mskKey(m.timestamp || Date.now());
+        if(dk !== lastKey){
+          const sep = document.createElement('div');
+          sep.className = 'date-sep';
+          const span = document.createElement('span');
+          span.textContent = dateLabel(m.timestamp || Date.now());
+          sep.appendChild(span);
+          messagesEl.appendChild(sep);
+          lastKey = dk;
+        }
+        messagesEl.appendChild(buildMessage(m));
+      }
+      if(stickBottom) messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function buildMessage(m){
+      const own = m.name === currentName;
+      const row = document.createElement('div');
+      row.className = 'msg' + (own ? ' own' : '');
+      row.dataset.id = m.id;
+      const wrap = document.createElement('div');
+      wrap.className = 'bubble-wrap';
+      if(!own){
+        const sender = document.createElement('div');
+        sender.className = 'sender';
+        sender.textContent = m.name;
+        wrap.appendChild(sender);
+      }
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      const text = document.createElement('div');
+      text.className = 'text';
+      text.textContent = m.text;
+      const time = document.createElement('div');
+      time.className = 'time';
+      time.textContent = mskTime(m.timestamp || Date.now());
+      bubble.appendChild(text);
+      bubble.appendChild(time);
+      wrap.appendChild(bubble);
+      row.appendChild(wrap);
+      return row;
+    }
+
+    function sendMessage(){
+      const text = msgInput.value.trim();
+      if(!text || !db) return;
+      if(isSanta && !activeUserKey){ toast('Сначала выберите пользователя в панели 👥'); return; }
+      db.ref(chatRoot() + '/messages').push({
+        name: currentName,
+        text: text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      });
+      msgInput.value = '';
+      msgInput.focus();
+    }
+    sendBtn.addEventListener('click', sendMessage);
+    msgInput.addEventListener('keydown', e => { if(e.key === 'Enter') sendMessage(); });
+
+    /* ---------- Удаление сообщения (долгое нажатие) ---------- */
+    let pressTimer = null, pressTarget = null, pressX = 0, pressY = 0;
+
+    function findMsg(el){ return el && el.closest ? el.closest('.msg') : null; }
+
+    function onPressStart(e){
+      if(!isSanta) return;
+      const msg = findMsg(e.target);
+      if(!msg) return;
+      if(e.pointerType === 'mouse' && e.button !== 0) return;
+      pressTarget = msg;
+      pressX = e.clientX; pressY = e.clientY;
+      pressTimer = setTimeout(() => {
+        msg.classList.add('pressing');
+        if(navigator.vibrate) navigator.vibrate(15);
+        showDeleteMenu(msg, pressX, pressY);
+      }, 520);
+    }
+    function onPressMove(e){
+      if(!pressTimer) return;
+      if(Math.abs(e.clientX - pressX) > 12 || Math.abs(e.clientY - pressY) > 12){
+        cancelPress();
+      }
+    }
+    function onPressEnd(){
+      cancelPress();
+    }
+    function cancelPress(){
+      if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; }
+      if(pressTarget){ pressTarget.classList.remove('pressing'); pressTarget = null; }
+    }
+
+    messagesEl.addEventListener('pointerdown', onPressStart);
+    messagesEl.addEventListener('pointermove', onPressMove);
+    messagesEl.addEventListener('pointerup', onPressEnd);
+    messagesEl.addEventListener('pointercancel', onPressEnd);
+    messagesEl.addEventListener('contextmenu', e => {
+      if(!isSanta) return;
+      const msg = findMsg(e.target);
+      if(!msg) return;
+      e.preventDefault();
+      showDeleteMenu(msg, e.clientX, e.clientY);
+    });
+
+    function showDeleteMenu(msg, x, y){
+      const id = msg.dataset.id;
+      deleteMenu.dataset.id = id;
+      deleteMenu.classList.remove('hidden');
+      const rect = deleteMenu.getBoundingClientRect();
+      let px = x, py = y + 12;
+      if(px + rect.width > window.innerWidth - 10) px = window.innerWidth - rect.width - 10;
+      if(py + rect.height > window.innerHeight - 10) py = y - rect.height - 10;
+      if(px < 10) px = 10; if(py < 10) py = 10;
+      deleteMenu.style.left = px + 'px';
+      deleteMenu.style.top = py + 'px';
+    }
+    function hideDeleteMenu(){ deleteMenu.classList.add('hidden'); }
+    deleteBtn.addEventListener('click', () => {
+      const id = deleteMenu.dataset.id;
+      hideDeleteMenu();
+      if(id && db && isSanta && activeUserKey){
+        db.ref(chatRoot() + '/messages/' + id).remove();
+      }
+    });
+    document.addEventListener('pointerdown', e => {
+      if(!deleteMenu.classList.contains('hidden') && !deleteMenu.contains(e.target)){
+        hideDeleteMenu();
+      }
+    });
+
+    /* ---------- Очистить чат ---------- */
+    clearBtn.addEventListener('click', () => {
+      if(isSanta && !activeUserKey){ toast('Сначала выберите пользователя в панели 👥'); return; }
+      const who = isSanta ? ('чат с ' + activeUserName) : 'ваш чат';
+      showConfirm('Очистить ' + who + '?', 'Все сообщения в этом чате будут удалены. Это действие нельзя отменить.', () => {
+        db.ref(chatRoot() + '/messages').remove().catch(() => toast('Не удалось очистить чат'));
+      });
+    });
+
+    /* ---------- Модалка ---------- */
+    let modalAction = null;
+    function showConfirm(title, text, onOk){
+      modalTitle.textContent = title;
+      modalText.textContent = text;
+      modalAction = onOk;
+      modalOverlay.classList.add('open');
+    }
+    modalCancel.addEventListener('click', () => { modalOverlay.classList.remove('open'); modalAction = null; });
+    modalOk.addEventListener('click', () => {
+      modalOverlay.classList.remove('open');
+      if(modalAction){ const a = modalAction; modalAction = null; a(); }
+    });
+    modalOverlay.addEventListener('click', e => {
+      if(e.target === modalOverlay){ modalOverlay.classList.remove('open'); modalAction = null; }
+    });
+
+    /* ---------- Панель пользователей ---------- */
+    usersBtn.addEventListener('click', openPanelFn);
+    closePanel.addEventListener('click', closePanelFn);
+    drawerOverlay.addEventListener('click', closePanelFn);
+    panelList.addEventListener('click', e => {
+      const row = e.target.closest('.user-row');
+      if(!row || !row.dataset.name) return;
+      selectUser({ name: row.dataset.name });
+      closePanelFn();
+    });
+    function openPanelFn(){ presencePanel.classList.add('open'); drawerOverlay.classList.add('open'); }
+    function closePanelFn(){ presencePanel.classList.remove('open'); drawerOverlay.classList.remove('open'); }
+
+    /* ---------- Toast ---------- */
+    let toastTimer = null;
+    function toast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      if(toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+    }
+
+    /* ---------- Служебное ---------- */
+    window.addEventListener('resize', initSky);
+    window.addEventListener('beforeunload', () => {
+      if(heartbeat){ clearInterval(heartbeat); }
+      if(presenceRef){
+        // onDisconnect сработает автоматически при закрытии вкладки
+        presenceRef.set({ name: currentName, online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
+      }
+    });
+
+    // Инициализация
+    initSky();
+    requestAnimationFrame(drawSky);
+    const savedName = recallName();
+    if(savedName && db){
+      nameInput.value = savedName;
+      startChat(savedName);
+    }else{
+      nameInput.focus();
+    }
+  })();
+  </script>
+</body>
+</html>
