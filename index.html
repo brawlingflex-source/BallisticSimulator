@@ -1,1175 +1,1602 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0e3a5c">
-<title>Новогодний чат с Дедом Морозом 🎅</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lobster&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Баллистическая установка — 3D</title>
 <style>
-  :root{
-    /* -------- Тема пользователя (голубой Новый год) -------- */
-    --bg1:#0b2a4a;
-    --bg2:#123f6b;
-    --bg3:#1c5a8f;
-    --accent:#2f9cf0;
-    --accent2:#64b5f6;
-    --accent3:#a8d8ff;
-    --gold:#ffd54f;
-    --gold2:#ffb300;
-    --bubble-own-a:#2f9cf0;
-    --bubble-own-b:#1565c0;
-    --bubble-other:#ffffff;
-    --text:#eaf6ff;
-    --text-soft:#bfe0ff;
-    --muted:#8fb9d9;
-    --surface:rgba(255,255,255,.14);
-    --surface-2:rgba(255,255,255,.22);
-    --border:rgba(255,255,255,.22);
-    --shadow:0 24px 70px rgba(0,0,0,.45);
-    --danger:#ff5c5c;
-    --glow-a:rgba(80,180,255,.55);
-    --glow-b:rgba(255,210,120,.25);
-    --rx:0deg; --ry:0deg;
-  }
-  body.mode-santa{
-    /* -------- Тема Деда Мороза (красный Новый год) -------- */
-    --bg1:#4a0b0b;
-    --bg2:#6b1220;
-    --bg3:#8f1d2c;
-    --accent:#ff5c6c;
-    --accent2:#ff8a94;
-    --accent3:#ffc1c6;
-    --gold:#ffd54f;
-    --gold2:#ffb300;
-    --bubble-own-a:#e53935;
-    --bubble-own-b:#9e1218;
-    --bubble-other:#fff6f2;
-    --text:#fff1ef;
-    --text-soft:#ffd6d3;
-    --muted:#e6a9a5;
-    --surface:rgba(255,255,255,.12);
-    --surface-2:rgba(255,255,255,.2);
-    --border:rgba(255,255,255,.22);
-    --shadow:0 24px 70px rgba(40,0,0,.5);
-    --danger:#ffd54f;
-    --glow-a:rgba(255,120,110,.5);
-    --glow-b:rgba(255,220,120,.3);
-  }
-  body.in-chat .santa-anchor{
-    justify-content:flex-end;
-    align-items:flex-start;
-    padding:18px 24px 0 0;
-    --santa-opacity:.5;
-    --santa-scale:.66;
-    --santa-w:clamp(190px, 38vw, 290px);
-  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;
+    font-family:"Segoe UI",Roboto,Arial,sans-serif;color:#e8f0e8;user-select:none}
+  canvas{display:block}
 
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%}
-  body{
-    font-family:'Nunito',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    color:var(--text);
-    overflow:hidden;
-    background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 45%,var(--bg3) 100%);
-    -webkit-font-smoothing:antialiased;
-    text-rendering:optimizeLegibility;
-    transition:background 1s ease;
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+  .panel{
+    position:absolute;background:rgba(6,14,10,.62);
+    border:1px solid rgba(120,220,150,.28);
+    backdrop-filter:blur(6px);
+    padding:10px 16px;border-radius:8px;
+    font-size:14px;letter-spacing:.4px;
+    box-shadow:0 4px 18px rgba(0,0,0,.5);
   }
-  button{font-family:inherit;touch-action:manipulation;cursor:pointer;border:none;background:none;color:inherit}
-  input,textarea{font-family:inherit}
-  .hidden{display:none!important}
+  .panel b{color:#7dff9d;font-weight:700}
+  #stats{top:16px;left:16px;line-height:1.7}
+  #clockBox{top:16px;right:16px;text-align:right;line-height:1.5}
+  #clock{font-size:22px;font-weight:700;color:#ffe9a8;letter-spacing:1px}
+  #phase{font-size:12px;opacity:.75}
+  #status{
+    bottom:20px;left:50%;transform:translateX(-50%);
+    font-size:15px;font-weight:600;text-align:center;white-space:nowrap;
+    padding:10px 26px;
+  }
+  .hot{color:#ff9a5a}
+  .ready{color:#7dff9d;text-shadow:0 0 14px rgba(125,255,157,.7)}
 
-  /* ============ Фоновые слои ============ */
-  #sky{
-    position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  #overlay{
+    position:fixed;inset:0;z-index:50;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 45%,rgba(10,26,16,.82),rgba(0,0,0,.94));
+    cursor:pointer;text-align:center;padding:20px;transition:opacity .3s;
   }
-  .glow{
-    position:absolute;border-radius:50%;filter:blur(80px);opacity:.8;
-    animation:drift 18s ease-in-out infinite;
+  #overlay.hidden{opacity:0;pointer-events:none}
+  #overlay h1{
+    font-size:clamp(20px,4vw,44px);margin:0 0 6px;letter-spacing:6px;
+    color:#b9ffc9;text-shadow:0 0 30px rgba(90,255,140,.35);font-weight:800;
   }
-  .glow.a{width:60vw;height:60vw;left:-15vw;top:-20vw;background:radial-gradient(circle,var(--glow-a),transparent 70%)}
-  .glow.b{width:55vw;height:55vw;right:-15vw;bottom:-20vw;background:radial-gradient(circle,var(--glow-b),transparent 70%);animation-delay:-9s}
-  @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(4vw,3vh) scale(1.12)}}
-
-  #snow{position:fixed;inset:0;z-index:2;pointer-events:none}
-
-  /* ============ 3D Дед Мороз ============ */
-  .santa-anchor{
-    position:fixed;inset:0;z-index:1;pointer-events:none;
-    display:flex;align-items:center;justify-content:center;
-    --santa-opacity:.92;--santa-scale:1;--santa-x:0%;--santa-y:0%;
-    --santa-w:clamp(220px,46vw,350px);
+  #overlay .sub{font-size:14px;opacity:.6;margin-bottom:34px;letter-spacing:2px}
+  #overlay .go{
+    font-size:17px;font-weight:700;letter-spacing:2px;color:#7dff9d;
+    border:1px solid rgba(125,255,157,.45);padding:12px 34px;border-radius:8px;
+    animation:pulse 2s ease-in-out infinite;
   }
-  .santa-tilt{
-    transform:rotateX(var(--rx)) rotateY(var(--ry));
-    transform-style:preserve-3d;
-    transition:transform .25s ease-out;
-    will-change:transform;
-    opacity:var(--santa-opacity);
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 rgba(125,255,157,0)}50%{box-shadow:0 0 26px rgba(125,255,157,.35)}}
+  #overlay .keys{margin-top:30px;font-size:13px;line-height:2;opacity:.8;max-width:640px}
+  #overlay .keys kbd{
+    background:rgba(125,255,157,.12);border:1px solid rgba(125,255,157,.3);
+    border-radius:5px;padding:2px 9px;margin:0 3px;color:#c8ffd6;font-family:inherit;
   }
-  .santa-persp{perspective:1000px;transform-style:preserve-3d;transform:scale(var(--santa-scale)) translate(var(--santa-x),var(--santa-y))}
-  .santa-float{transform-style:preserve-3d;animation:floaty 6s ease-in-out infinite}
-  .santa-rotate{
-    position:relative;width:var(--santa-w);aspect-ratio:220/340;
-    transform-style:preserve-3d;
-    animation:turny 9s ease-in-out infinite;
+  #crosshair{
+    position:fixed;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;
+    z-index:9;pointer-events:none;opacity:0;transition:opacity .25s;
   }
-  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-22px)}}
-  @keyframes turny{0%,100%{transform:rotateY(-16deg)}50%{transform:rotateY(16deg)}}
-  .santa-layer{position:absolute;inset:0;width:100%;height:100%}
-  .layer-back{transform:translateZ(-48px)}
-  .layer-mid{transform:translateZ(0)}
-  .layer-front{transform:translateZ(48px)}
-  .santa-shadow{
-    position:absolute;left:50%;bottom:8%;width:70%;height:10%;
-    transform:translateX(-50%);border-radius:50%;
-    background:radial-gradient(ellipse,rgba(0,0,0,.35),transparent 70%);
-    filter:blur(8px);
-  }
-  .halo{
-    position:absolute;left:50%;top:8%;width:150%;height:120%;
-    transform:translateX(-50%);border-radius:50%;
-    background:radial-gradient(circle,rgba(255,240,200,.35),transparent 60%);
-    filter:blur(18px);z-index:-1;
-    animation:pulse 4s ease-in-out infinite;
-  }
-  @keyframes pulse{0%,100%{opacity:.55;transform:translateX(-50%) scale(1)}50%{opacity:.9;transform:translateX(-50%) scale(1.08)}}
-
-  /* ============ Экраны ============ */
-  .screen{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:18px}
-  .screen{transition:opacity .45s ease,transform .45s ease}
-  .screen.leaving{opacity:0;transform:scale(.97)}
-
-  /* ============ Экран приветствия ============ */
-  #welcome .card{
-    width:min(520px,100%);text-align:center;
-    background:var(--surface);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
-    border:1px solid var(--border);border-radius:30px;
-    padding:clamp(26px,5vw,46px);box-shadow:var(--shadow);
-    position:relative;overflow:hidden;
-  }
-  #welcome .card::before{
-    content:"";position:absolute;inset:0;border-radius:30px;padding:1.5px;
-    background:linear-gradient(140deg,rgba(255,255,255,.55),transparent 35%,transparent 65%,var(--gold));
-    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-    -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;
-  }
-  .title-deco{font-size:clamp(30px,6vw,42px);letter-spacing:2px;animation:bob 3.4s ease-in-out infinite}
-  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
-  h1.brand{
-    font-family:'Lobster',cursive;font-weight:400;
-    font-size:clamp(34px,7vw,56px);line-height:1.05;margin:6px 0 4px;
-    color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.18),0 8px 26px rgba(0,0,0,.35);
-  }
-  h1.brand .accent{
-    background:linear-gradient(120deg,var(--gold),#fff 55%,var(--gold2));
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  }
-  .subtitle{color:var(--text-soft);font-size:clamp(15px,3.4vw,18px);font-weight:600;margin:4px 0 22px}
-  .field-label{display:block;text-align:left;font-weight:800;font-size:14px;color:var(--text-soft);margin:0 2px 8px;letter-spacing:.3px}
-  .name-input{
-    width:100%;padding:15px 18px;border-radius:16px;border:1px solid var(--border);
-    background:rgba(255,255,255,.14);color:#fff;font-size:17px;font-weight:700;outline:none;
-    transition:border-color .2s,box-shadow .2s,background .2s;
-  }
-  .name-input::placeholder{color:var(--muted);font-weight:600}
-  .name-input:focus{border-color:var(--accent2);background:rgba(255,255,255,.2);box-shadow:0 0 0 4px rgba(255,255,255,.12)}
-  .name-input.shake{animation:shake .4s}
-  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
-
-  .btn-start{
-    margin-top:20px;width:100%;padding:17px 20px;border-radius:18px;border:none;cursor:pointer;
-    background:linear-gradient(120deg,#ff5252 0%,#e53935 45%,#c62828 100%);
-    color:#fff;font-size:clamp(16px,3.6vw,19px);font-weight:900;letter-spacing:.2px;
-    box-shadow:0 12px 30px rgba(200,40,40,.5),inset 0 2px 0 rgba(255,255,255,.35);
-    position:relative;overflow:hidden;transition:transform .15s,box-shadow .2s,filter .2s;
-    display:flex;align-items:center;justify-content:center;gap:10px;
-  }
-  .btn-start::after{
-    content:"";position:absolute;top:0;left:-70%;width:40%;height:100%;
-    background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);
-    transform:skewX(-20deg);animation:shine 3.6s ease-in-out infinite;
-  }
-  @keyframes shine{0%{left:-70%}55%{left:130%}100%{left:130%}}
-  .btn-start:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(200,40,40,.6),inset 0 2px 0 rgba(255,255,255,.35);filter:brightness(1.05)}
-  .btn-start:active{transform:translateY(0) scale(.98)}
-  .hint{font-size:12.5px;color:var(--muted);margin-top:16px;line-height:1.5}
-
-  /* ============ Экран чата ============ */
-  #chat{display:flex}
-  .chat-card{
-    width:min(760px,100%);height:min(880px,100%);max-height:100%;
-    display:flex;flex-direction:column;
-    background:var(--surface);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-    border:1px solid var(--border);border-radius:26px;
-    box-shadow:var(--shadow);overflow:hidden;
-  }
-
-  .chat-header{
-    display:flex;align-items:center;gap:12px;padding:12px 14px;
-    background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
-    border-bottom:1px solid var(--border);
-  }
-  .icon-btn{
-    position:relative;
-    width:42px;height:42px;flex:0 0 auto;border-radius:13px;display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,.14);border:1px solid var(--border);font-size:20px;
-    transition:background .2s,transform .15s;
-  }
-  .icon-btn:hover{background:rgba(255,255,255,.24)}
-  .icon-btn:active{transform:scale(.94)}
-  .avatar{
-    width:46px;height:46px;flex:0 0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-size:26px;background:linear-gradient(140deg,var(--accent),var(--accent2));
-    box-shadow:inset 0 2px 4px rgba(255,255,255,.4),0 4px 12px rgba(0,0,0,.25);
-    border:2px solid rgba(255,255,255,.35);
-  }
-  .head-txt{flex:1;min-width:0}
-  .head-title{font-weight:900;font-size:17px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .head-sub{font-size:12.5px;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .badge{
-    position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--danger);
-    color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 6px rgba(0,0,0,.3);
-  }
-
-  .santa-hint{
-    padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--gold);
-    background:rgba(0,0,0,.15);text-align:center;border-bottom:1px solid var(--border);
-  }
-
-  .messages{
-    flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:3px;
-    scroll-behavior:smooth;
-  }
-  .messages::-webkit-scrollbar{width:6px}
-  .messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:3px}
-
-  .date-sep{display:flex;align-items:center;gap:12px;margin:16px 0 10px;color:var(--text-soft)}
-  .date-sep::before,.date-sep::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
-  .date-sep span{
-    font-size:12px;font-weight:800;padding:5px 14px;border-radius:999px;
-    background:rgba(255,255,255,.14);border:1px solid var(--border);white-space:nowrap;
-    box-shadow:0 2px 8px rgba(0,0,0,.15);
-  }
-
-  .msg{display:flex;margin:2px 0;animation:pop .25s ease;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
-  .msg.own{justify-content:flex-end}
-  .bubble-wrap{max-width:78%;display:flex;flex-direction:column}
-  .msg.own .bubble-wrap{align-items:flex-end}
-  .sender{font-size:12px;font-weight:800;color:var(--accent3);margin:0 4px 3px;padding-left:6px}
-  .bubble{
-    padding:10px 13px 7px;border-radius:18px;position:relative;
-    box-shadow:0 4px 14px rgba(0,0,0,.18);word-break:break-word;
-  }
-  .msg:not(.own) .bubble{background:var(--bubble-other);color:#22303c;border-bottom-left-radius:6px}
-  .msg.own .bubble{background:linear-gradient(135deg,var(--bubble-own-a),var(--bubble-own-b));color:#fff;border-bottom-right-radius:6px}
-  .bubble .text{font-size:15.5px;line-height:1.4;white-space:pre-wrap}
-  .bubble .time{font-size:11px;margin-top:4px;text-align:right;opacity:.7;font-weight:700}
-  .msg.own .bubble .time{color:rgba(255,255,255,.85)}
-  .msg.pressing .bubble{outline:2px solid var(--gold);outline-offset:2px}
-
-  .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-soft);text-align:center;padding:30px;gap:10px}
-  .empty-state .em{font-size:52px;animation:bob 3.4s ease-in-out infinite}
-  .empty-state .t{font-weight:800;font-size:17px}
-  .empty-state .s{font-size:13px;color:var(--muted)}
-
-  .chat-input-bar{
-    display:flex;align-items:center;gap:10px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
-    border-top:1px solid var(--border);background:linear-gradient(0deg,rgba(0,0,0,.12),transparent);
-  }
-  .chat-input{
-    flex:1;padding:13px 18px;border-radius:999px;border:1px solid var(--border);
-    background:rgba(255,255,255,.14);color:#fff;font-size:16px;outline:none;
-    transition:border-color .2s,background .2s;
-  }
-  .chat-input::placeholder{color:var(--muted)}
-  .chat-input:focus{border-color:var(--accent2);background:rgba(255,255,255,.2)}
-  .send-btn{
-    width:50px;height:50px;flex:0 0 auto;border-radius:50%;
-    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:22px;
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 6px 18px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.35);
-    transition:transform .15s,filter .2s;
-  }
-  .send-btn:hover{filter:brightness(1.08)}
-  .send-btn:active{transform:scale(.92)}
-
-  /* ============ Панель пользователей (только Санта) ============ */
-  .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .3s}
-  .drawer-overlay.open{opacity:1;pointer-events:auto}
-  .presence-panel{
-    position:fixed;top:0;right:0;bottom:0;width:min(340px,88vw);z-index:41;
-    background:linear-gradient(180deg,var(--bg2),var(--bg3));
-    border-left:1px solid var(--border);box-shadow:-20px 0 50px rgba(0,0,0,.4);
-    transform:translateX(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);
-    display:flex;flex-direction:column;
-  }
-  .presence-panel.open{transform:translateX(0)}
-  .panel-head{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-  .panel-title{font-weight:900;font-size:17px}
-  .panel-title small{display:block;font-size:12px;color:var(--muted);font-weight:700}
-  .panel-list{flex:1;overflow-y:auto;padding:10px}
-  .user-row{
-    display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;margin-bottom:6px;
-    background:rgba(255,255,255,.1);border:1px solid var(--border);cursor:pointer;
-    transition:background .15s,transform .1s;
-    user-select:none;-webkit-user-select:none;
-  }
-  .user-row:hover{background:rgba(255,255,255,.18)}
-  .user-row:active{transform:scale(.98)}
-  .user-row.active{outline:2px solid var(--gold);outline-offset:-2px;background:rgba(255,255,255,.2)}
-  .user-row .dot{width:10px;height:10px;border-radius:50%;background:#6b7c8c;flex:0 0 auto}
-  .user-row.online .dot{background:#37e07a;box-shadow:0 0 10px #37e07a}
-  .u-name{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
-  .u-status{font-size:12px;color:var(--muted);font-weight:700}
-  .u-left{flex:1;min-width:0}
-  .u-open{font-size:12px;font-weight:800;color:var(--gold);white-space:nowrap;padding-left:6px}
-  .panel-empty{padding:30px 16px;text-align:center;color:var(--muted);font-weight:700}
-
-  /* ============ Меню удаления сообщения ============ */
-  .delete-menu{
-    position:fixed;z-index:60;padding:6px;border-radius:14px;
-    background:#fff;box-shadow:0 12px 40px rgba(0,0,0,.45);
-    animation:pop .18s ease;transform-origin:center;
-  }
-  .delete-menu button{
-    display:flex;align-items:center;gap:8px;width:100%;text-align:left;
-    padding:11px 14px;border-radius:10px;font-size:14px;font-weight:800;color:#c62828;
-    white-space:nowrap;
-  }
-  .delete-menu button:hover{background:#ffeaea}
-
-  /* ============ Модалка подтверждения ============ */
-  .modal-overlay{
-    position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.5);
-    display:flex;align-items:center;justify-content:center;padding:20px;
-    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-    opacity:0;pointer-events:none;transition:opacity .25s;
-  }
-  .modal-overlay.open{opacity:1;pointer-events:auto}
-  .modal{
-    width:min(380px,100%);background:#fff;color:#22303c;border-radius:22px;padding:24px;text-align:center;
-    box-shadow:0 24px 70px rgba(0,0,0,.5);transform:translateY(12px) scale(.97);transition:transform .25s;
-  }
-  .modal-overlay.open .modal{transform:none}
-  .modal .em{font-size:44px}
-  .modal h3{margin:10px 0 6px;font-size:19px;font-weight:900}
-  .modal p{margin:0 0 20px;color:#5b6b7a;font-size:14.5px;font-weight:600;line-height:1.5}
-  .modal-actions{display:flex;gap:10px}
-  .modal-actions button{flex:1;padding:13px;border-radius:13px;font-weight:900;font-size:15px;transition:filter .15s,transform .1s}
-  .modal-actions button:active{transform:scale(.97)}
-  .btn-cancel{background:#eef2f6;color:#445}
-  .btn-danger{background:linear-gradient(120deg,#ff5252,#c62828);color:#fff;box-shadow:0 8px 20px rgba(200,40,40,.35)}
-
-  .toast{
-    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);z-index:80;
-    background:rgba(20,30,40,.92);color:#fff;padding:12px 20px;border-radius:14px;font-weight:800;font-size:14px;
-    box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .3s;max-width:88vw;text-align:center;
-    pointer-events:none;
-  }
-  .toast.show{transform:translateX(-50%) translateY(0)}
-
-  .error-banner{
-    position:fixed;left:0;right:0;bottom:0;z-index:90;background:#7f1d1d;color:#fff;
-    padding:14px 18px;text-align:center;font-weight:800;font-size:14px;
-  }
-
-  /* ============ Адаптивность ============ */
-  @media (max-width:640px){
-    .screen{padding:12px}
-    #chat{padding:0}
-    .chat-card{border-radius:0;height:100%;max-height:100%;border:none}
-    .messages{padding:12px 10px}
-    .bubble-wrap{max-width:86%}
-    .bubble .text{font-size:15px}
-    .santa-anchor{--santa-w:clamp(190px,62vw,280px)}
-    body.in-chat .santa-anchor{--santa-w:clamp(170px,52vw,250px);padding:12px 14px 0 0}
-  }
-  @media (min-width:641px){
-    .chat-card{height:min(860px,94vh)}
-  }
-  @media (prefers-reduced-motion:reduce){
-    *{animation-duration:.001s!important;animation-iteration-count:1!important}
-  }
+  #crosshair.on{opacity:.8}
+  #crosshair:before,#crosshair:after{content:"";position:absolute;background:rgba(140,255,170,.85)}
+  #crosshair:before{left:12px;top:0;width:2px;height:26px}
+  #crosshair:after{top:12px;left:0;height:2px;width:26px}
 </style>
 </head>
 <body>
-  <!-- Фон -->
-  <div id="sky">
-    <div class="glow a"></div>
-    <div class="glow b"></div>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div class="panel" id="stats">
+    <div>Разрушено домов: <b id="statDestroyed">0</b></div>
+    <div>Погибших жителей: <b id="statKilled">0</b></div>
   </div>
-
-  <!-- 3D Дед Мороз -->
-  <div class="santa-anchor">
-    <div class="santa-tilt">
-      <div class="santa-persp">
-        <div class="santa-float">
-          <div class="santa-rotate">
-            <div class="halo"></div>
-            <!-- Задний слой: мешок и плащ -->
-            <svg class="santa-layer layer-back" viewBox="0 0 220 340" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <ellipse cx="110" cy="180" rx="100" ry="120" fill="#a31621"/>
-              <ellipse cx="110" cy="180" rx="100" ry="120" fill="#000" opacity=".08" transform="translate(-6,8)"/>
-              <g>
-                <ellipse cx="184" cy="252" rx="34" ry="60" fill="#8a5a2b"/>
-                <ellipse cx="184" cy="192" rx="27" ry="15" fill="#7a4a21"/>
-                <path d="M158 196 Q184 174 210 196" stroke="#c9a15c" stroke-width="6" fill="none" stroke-linecap="round"/>
-                <rect x="170" y="236" width="28" height="28" rx="5" fill="#c9a15c"/>
-                <circle cx="184" cy="250" r="6" fill="#8a5a2b"/>
-              </g>
-            </svg>
-            <!-- Средний слой: тело -->
-            <svg class="santa-layer layer-mid" viewBox="0 0 220 340" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="70" y="300" width="30" height="32" rx="10" fill="#2b2b2b"/>
-              <rect x="120" y="300" width="30" height="32" rx="10" fill="#2b2b2b"/>
-              <path d="M64 190 Q40 210 32 246" stroke="#c62828" stroke-width="27" fill="none" stroke-linecap="round"/>
-              <path d="M156 190 Q178 168 182 132" stroke="#c62828" stroke-width="27" fill="none" stroke-linecap="round"/>
-              <rect x="60" y="160" width="100" height="150" rx="46" fill="#d62828"/>
-              <ellipse cx="110" cy="304" rx="52" ry="16" fill="#fff"/>
-              <rect x="60" y="228" width="100" height="18" fill="#2b2b2b"/>
-              <rect x="96" y="224" width="28" height="26" rx="5" fill="none" stroke="#f7c948" stroke-width="6"/>
-              <circle cx="110" cy="180" r="5" fill="#2b2b2b"/>
-              <circle cx="110" cy="204" r="5" fill="#2b2b2b"/>
-              <circle cx="32" cy="252" r="15" fill="#fff"/>
-              <circle cx="30" cy="268" r="11" fill="#b71c1c"/>
-              <circle cx="183" cy="126" r="15" fill="#fff"/>
-              <circle cx="186" cy="112" r="11" fill="#b71c1c"/>
-            </svg>
-            <!-- Передний слой: голова и шапка -->
-            <svg class="santa-layer layer-front" viewBox="0 0 220 340" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <circle cx="110" cy="126" r="52" fill="#ffd9b3"/>
-              <circle cx="62" cy="128" r="12" fill="#ffc79e"/>
-              <circle cx="158" cy="128" r="12" fill="#ffc79e"/>
-              <circle cx="80" cy="140" r="12" fill="#ff9d9d" opacity=".55"/>
-              <circle cx="140" cy="140" r="12" fill="#ff9d9d" opacity=".55"/>
-              <ellipse cx="110" cy="160" rx="52" ry="48" fill="#fff"/>
-              <circle cx="70" cy="176" r="20" fill="#fff"/>
-              <circle cx="150" cy="176" r="20" fill="#fff"/>
-              <circle cx="110" cy="196" r="26" fill="#fff"/>
-              <circle cx="88" cy="196" r="18" fill="#fff"/>
-              <circle cx="132" cy="196" r="18" fill="#fff"/>
-              <ellipse cx="86" cy="138" rx="20" ry="10" fill="#fff" transform="rotate(16 86 138)"/>
-              <ellipse cx="134" cy="138" rx="20" ry="10" fill="#fff" transform="rotate(-16 134 138)"/>
-              <circle cx="90" cy="118" r="6" fill="#2b2b2b"/>
-              <circle cx="130" cy="118" r="6" fill="#2b2b2b"/>
-              <circle cx="92" cy="116" r="2.2" fill="#fff"/>
-              <circle cx="132" cy="116" r="2.2" fill="#fff"/>
-              <rect x="78" y="103" width="22" height="9" rx="4.5" fill="#fff"/>
-              <rect x="120" y="103" width="22" height="9" rx="4.5" fill="#fff"/>
-              <circle cx="110" cy="130" r="13" fill="#ff8a80"/>
-              <circle cx="106" cy="126" r="4" fill="#ff6f61" opacity=".7"/>
-              <rect x="54" y="82" width="112" height="26" rx="13" fill="#fff"/>
-              <path d="M56 84 C54 50 76 22 112 18 C148 22 166 52 164 84 Z" fill="#d62828"/>
-              <circle cx="112" cy="16" r="15" fill="#fff"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-      <div class="santa-shadow"></div>
-    </div>
+  <div class="panel" id="clockBox">
+    <div id="clock">06:00</div>
+    <div id="phase">День</div>
   </div>
+  <div class="panel" id="status">ГОТОВ К ПУСКУ — нажмите F</div>
+</div>
 
-  <canvas id="snow"></canvas>
+<div id="crosshair"></div>
 
-  <!-- ============ Экран приветствия ============ -->
-  <section id="welcome" class="screen">
-    <div class="card">
-      <div class="title-deco">🎄 ⛄ 🎄</div>
-      <h1 class="brand">С <span class="accent">Новым годом</span>!</h1>
-      <p class="subtitle">Привет! Я — Дед Мороз. 🎅<br>Загадывай желание — а сначала скажи, как тебя зовут?</p>
-      <label class="field-label" for="name-input">Твоё имя</label>
-      <input id="name-input" class="name-input" type="text" maxlength="30" placeholder="Введи своё имя..." autocomplete="off">
-      <button id="start-btn" class="btn-start">
-        <span>🎁</span><span>Начать чат с Дедом Морозом!</span><span>🎄</span>
-      </button>
-      <p class="hint">❄️ Самый волшебный чат этого Нового года ❄️</p>
-    </div>
-  </section>
-
-  <!-- ============ Экран чата ============ -->
-  <section id="chat" class="screen hidden">
-    <div class="chat-card">
-      <header class="chat-header">
-        <button class="icon-btn" id="back-btn" title="Назад">←</button>
-        <div class="avatar" id="chat-avatar">🎅</div>
-        <div class="head-txt">
-          <div class="head-title" id="chat-title">Дед Мороз</div>
-          <div class="head-sub" id="chat-sub">Новогодний чат ✨ · время МСК</div>
-        </div>
-        <button class="icon-btn hidden" id="clear-btn" title="Очистить весь чат">🗑️</button>
-        <button class="icon-btn hidden" id="users-btn" title="Пользователи">👥<span class="badge hidden" id="online-badge">0</span></button>
-      </header>
-
-      <div class="santa-hint hidden" id="santa-hint">🎅 Вы вошли как Дед Мороз — удерживайте сообщение, чтобы удалить его</div>
-
-      <div class="messages" id="messages"></div>
-
-      <div class="chat-input-bar">
-        <input class="chat-input" id="msg-input" type="text" placeholder="Сообщение..." autocomplete="off">
-        <button class="send-btn" id="send-btn" title="Отправить">➤</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Панель пользователей (Санта) -->
-  <div class="drawer-overlay" id="drawer-overlay"></div>
-  <aside class="presence-panel" id="presence-panel">
-    <div class="panel-head">
-      <div class="panel-title">Пользователи<small id="panel-sub">Кто заходил в чат</small></div>
-      <button class="icon-btn" id="close-panel">✕</button>
-    </div>
-    <div class="panel-list" id="panel-list"></div>
-  </aside>
-
-  <!-- Меню удаления -->
-  <div class="delete-menu hidden" id="delete-menu">
-    <button id="delete-btn">🗑️ Удалить это сообщение</button>
+<div id="overlay">
+  <h1>БАЛЛИСТИЧЕСКАЯ УСТАНОВКА</h1>
+  <div class="sub">ТАКТИЧЕСКИЙ РАКЕТНЫЙ КОМПЛЕКС · ОГОНЬ ПО ГОРОДУ</div>
+  <div class="go">НАЖМИТЕ, ЧТОБЫ НАЧАТЬ</div>
+  <div class="keys">
+    <kbd>F</kbd> — пуск ракеты &nbsp;·&nbsp; <kbd>мышь</kbd> — наведение и управление ракетой<br>
+    <kbd>V</kbd> — режим обзора (свободный полёт) &nbsp;·&nbsp; <kbd>Q</kbd> — вернуться к установке<br>
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> — полёт в режиме обзора &nbsp;·&nbsp; <kbd>Shift</kbd> — ускорение<br>
+    <kbd>Esc</kbd> — освободить курсор
   </div>
+</div>
 
-  <!-- Модалка подтверждения -->
-  <div class="modal-overlay" id="modal-overlay">
-    <div class="modal">
-      <div class="em">⚠️</div>
-      <h3 id="modal-title">Вы уверены?</h3>
-      <p id="modal-text">Это действие нельзя отменить.</p>
-      <div class="modal-actions">
-        <button class="btn-cancel" id="modal-cancel">Отмена</button>
-        <button class="btn-danger" id="modal-ok">Удалить</button>
-      </div>
-    </div>
-  </div>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
 
-  <div class="toast" id="toast"></div>
+<script type="module">
+import * as THREE from 'three';
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+/* ================================================================
+   БАЗА
+   ================================================================ */
+const canvas   = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-  <script>
-  (function(){
-    "use strict";
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x87b8e8, 900, 4200);
 
-    /* ---------- Firebase ---------- */
-    const firebaseConfig = {
-      apiKey: "AIzaSyAu_wfaRhTsWNbsyFYmEigopqJck7ynxlU",
-      authDomain: "messeger-0wo2h4.firebaseapp.com",
-      databaseURL: "https://messeger-0wo2h4-default-rtdb.firebaseio.com",
-      projectId: "messeger-0wo2h4",
-      storageBucket: "messeger-0wo2h4.firebasestorage.app",
-      messagingSenderId: "1057251395030",
-      appId: "1:1057251395030:web:86f8f718ed938055e29077"
-    };
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.4, 12000);
 
-    let db = null;
-    try{
-      if(typeof firebase === 'undefined') throw new Error('Firebase SDK не загрузился');
-      firebase.initializeApp(firebaseConfig);
-      db = firebase.database();
-    }catch(err){
-      const b = document.createElement('div');
-      b.className = 'error-banner';
-      b.textContent = '⚠️ Не удалось подключиться к базе данных (проверьте интернет).';
-      document.body.appendChild(b);
-    }
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
 
-    /* ---------- Утилиты ---------- */
-    const $ = s => document.querySelector(s);
-    const pad = n => String(n).padStart(2,'0');
-    const MSK = 'Europe/Moscow';
-    const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-    const MONTHS_SHORT = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+/* ================================================================
+   ТЕКСТУРЫ
+   ================================================================ */
+function makeWallTextures(){
+  const W = 512, H = 128;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#b6b2a8'; ctx.fillRect(0,0,W,H);
+  for (let i=0;i<2600;i++){
+    const g = 150 + Math.random()*70;
+    ctx.fillStyle = `rgba(${g},${g},${g-6},${Math.random()*0.16})`;
+    ctx.fillRect(Math.random()*W, Math.random()*H, 2+Math.random()*6, 2+Math.random()*4);
+  }
+  ctx.fillStyle = '#8e8a80'; ctx.fillRect(0,0,W,11); ctx.fillRect(0,H-11,W,11);
+  ctx.fillStyle = 'rgba(255,255,255,.10)'; ctx.fillRect(0,11,W,3);
 
-    function mskParts(ts){
-      const d = new Date(ts);
-      const f = new Intl.DateTimeFormat('en-GB',{
-        timeZone:MSK, year:'numeric', month:'2-digit', day:'2-digit',
-        hour:'2-digit', minute:'2-digit', hour12:false, hourCycle:'h23'
-      });
-      const p = {};
-      for(const part of f.formatToParts(d)) p[part.type] = part.value;
-      return {y:+p.year, m:+p.month, d:+p.day, h:+p.hour, min:+p.minute};
-    }
-    function mskKey(ts){ const p = mskParts(ts); return p.y+'-'+p.m+'-'+p.d; }
-    function mskTime(ts){ const p = mskParts(ts); return pad(p.h)+':'+pad(p.min); }
-    function dateLabel(ts){
-      const p = mskParts(ts);
-      const key = mskKey(ts);
-      const todayKey = mskKey(Date.now());
-      const yestKey = mskKey(Date.now() - 86400000);
-      if(key === todayKey) return 'Сегодня';
-      if(key === yestKey) return 'Вчера';
-      return p.d + ' ' + MONTHS[p.m-1] + ' ' + p.y;
-    }
-    function shortWhen(ts){
-      if(!ts) return 'неизвестно';
-      const p = mskParts(ts);
-      return p.d + ' ' + MONTHS_SHORT[p.m-1] + ' ' + pad(p.h) + ':' + pad(p.min);
-    }
-    function escapeHtml(s){
-      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-    function userKey(name){ return encodeURIComponent(String(name)).replace(/\./g, '%2E'); }
+  const N = 8, pad = 10, gap = (W - pad*2) / N;
+  for (let i=0;i<N;i++){
+    const x = pad + i*gap + gap*0.13, w = gap*0.74, y = 34, h = 62;
+    ctx.fillStyle = '#2a333d';  ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = '#3d4d5c';  ctx.fillRect(x+2, y+2, w-4, h*0.45);
+    ctx.strokeStyle = '#8f8b81'; ctx.lineWidth = 3; ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(160,200,235,.13)'; ctx.fillRect(x+3, y+3, w*0.3, h-6);
+  }
 
-    /* ---------- Состояние ---------- */
-    let currentName = '';
-    let isSanta = false;
-    let presenceRef = null;
-    let heartbeat = null;
-    let msgQuery = null;
-    let presenceCb = null;
-    const messages = new Map();
-    let stickBottom = true;
-    let activeUserKey = null;   // для Деда Мороза: чей чат сейчас открыт
-    let activeUserName = '';
-    let presenceEntries = [];
+  const cv2 = document.createElement('canvas'); cv2.width = W; cv2.height = H;
+  const ctx2 = cv2.getContext('2d');
+  ctx2.fillStyle = '#000'; ctx2.fillRect(0,0,W,H);
+  for (let i=0;i<N;i++){
+    const x = pad + i*gap + gap*0.13, w = gap*0.74, y = 34, h = 62;
+    ctx2.fillStyle = Math.random() > 0.22 ? '#ffd08a' : '#000';
+    ctx2.fillRect(x+3, y+3, w-6, h-6);
+  }
 
-    /* ---------- Сохранение сессии (localStorage + sessionStorage + cookie) ---------- */
-    const STORAGE_KEY = 'santaChatName_v1';
-    function rememberName(n){
-      const v = String(n);
-      try{ localStorage.setItem(STORAGE_KEY, v); }catch(e){}
-      try{ sessionStorage.setItem(STORAGE_KEY, v); }catch(e){}
-      try{ document.cookie = STORAGE_KEY + '=' + encodeURIComponent(v) + '; max-age=31536000; path=/; SameSite=Lax'; }catch(e){}
-    }
-    function forgetName(){
-      try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
-      try{ sessionStorage.removeItem(STORAGE_KEY); }catch(e){}
-      try{ document.cookie = STORAGE_KEY + '=; max-age=0; path=/'; }catch(e){}
-    }
-    function recallName(){
-      try{ const v = localStorage.getItem(STORAGE_KEY); if(v) return v; }catch(e){}
-      try{ const v = sessionStorage.getItem(STORAGE_KEY); if(v) return v; }catch(e){}
-      try{
-        const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + STORAGE_KEY + '=([^;]*)'));
-        if(m) return decodeURIComponent(m[1]);
-      }catch(e){}
-      return null;
-    }
+  const t1 = new THREE.CanvasTexture(cv), t2 = new THREE.CanvasTexture(cv2);
+  t1.colorSpace = t2.colorSpace = THREE.SRGBColorSpace;
+  t1.anisotropy = t2.anisotropy = 4;
+  return { map: t1, emissive: t2 };
+}
 
-    /* ---------- DOM ---------- */
-    const welcomeScreen = $('#welcome');
-    const chatScreen = $('#chat');
-    const nameInput = $('#name-input');
-    const startBtn = $('#start-btn');
-    const backBtn = $('#back-btn');
-    const chatAvatar = $('#chat-avatar');
-    const chatTitle = $('#chat-title');
-    const chatSub = $('#chat-sub');
-    const clearBtn = $('#clear-btn');
-    const usersBtn = $('#users-btn');
-    const onlineBadge = $('#online-badge');
-    const santaHint = $('#santa-hint');
-    const messagesEl = $('#messages');
-    const msgInput = $('#msg-input');
-    const sendBtn = $('#send-btn');
-    const presencePanel = $('#presence-panel');
-    const drawerOverlay = $('#drawer-overlay');
-    const closePanel = $('#close-panel');
-    const panelList = $('#panel-list');
-    const panelSub = $('#panel-sub');
-    const deleteMenu = $('#delete-menu');
-    const deleteBtn = $('#delete-btn');
-    const modalOverlay = $('#modal-overlay');
-    const modalTitle = $('#modal-title');
-    const modalText = $('#modal-text');
-    const modalCancel = $('#modal-cancel');
-    const modalOk = $('#modal-ok');
-    const toastEl = $('#toast');
+function makeRadialTexture(inner, mid, outer){
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(64,64,0,64,64,64);
+  g.addColorStop(0, inner); g.addColorStop(0.4, mid); g.addColorStop(1, outer);
+  ctx.fillStyle = g; ctx.fillRect(0,0,128,128);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
 
-    /* ---------- Снег + звёзды ---------- */
-    const canvas = $('#snow');
-    const ctx = canvas.getContext('2d');
-    let stars = [], flakes = [], W = 0, H = 0, DPR = 1;
+const TEX_FIRE  = makeRadialTexture('rgba(255,255,230,1)','rgba(255,150,30,.85)','rgba(140,20,0,0)');
+const TEX_SMOKE = makeRadialTexture('rgba(120,120,120,.75)','rgba(70,70,70,.45)','rgba(30,30,30,0)');
+const TEX_SPARK = makeRadialTexture('rgba(255,255,255,1)','rgba(255,220,150,.8)','rgba(255,120,0,0)');
 
-    function initSky(){
-      DPR = Math.min(window.devicePixelRatio || 1, 2);
-      W = window.innerWidth; H = window.innerHeight;
-      canvas.width = W * DPR; canvas.height = H * DPR;
-      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-      ctx.setTransform(DPR,0,0,DPR,0,0);
-      stars = [];
-      const sc = Math.round((W*H)/16000);
-      for(let i=0;i<sc;i++){
-        stars.push({x:Math.random()*W, y:Math.random()*H*0.9, r:0.5+Math.random()*1.7, ph:Math.random()*6.283});
+/* ================================================================
+   СВЕТ
+   ================================================================ */
+const hemi = new THREE.HemisphereLight(0xbdd7ff, 0x2b2f22, 0.55);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xfff2e0, 2.4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 10;
+sun.shadow.camera.far  = 3400;
+const SH = 950;
+sun.shadow.camera.left = -SH; sun.shadow.camera.right = SH;
+sun.shadow.camera.top  =  SH; sun.shadow.camera.bottom = -SH;
+sun.shadow.bias = -0.0006;
+sun.shadow.normalBias = 0.5;
+scene.add(sun);
+scene.add(sun.target);
+sun.target.position.set(0, 0, -300);
+
+/* ================================================================
+   ЗВЁЗДЫ
+   ================================================================ */
+const starGeo = new THREE.BufferGeometry();
+{
+  const N = 1800, arr = new Float32Array(N*3);
+  for (let i=0;i<N;i++){
+    const v = new THREE.Vector3().randomDirection().multiplyScalar(5000);
+    v.y = Math.abs(v.y) + 120;
+    arr[i*3]=v.x; arr[i*3+1]=v.y; arr[i*3+2]=v.z;
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(arr,3));
+}
+const starMat = new THREE.PointsMaterial({
+  color:0xffffff, size:2.2, sizeAttenuation:false,
+  transparent:true, opacity:0, depthWrite:false, fog:false
+});
+scene.add(new THREE.Points(starGeo, starMat));
+
+/* ================================================================
+   ЗЕМЛЯ, ДОРОГИ
+   ================================================================ */
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(9000, 9000),
+  new THREE.MeshStandardMaterial({ color:0x39412c, roughness:1, metalness:0 })
+);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* ================================================================
+   ГОРОД
+   ================================================================ */
+const COLS = 9, ROWS = 8, SPACING = 80;
+const CITY_X0 = -((COLS-1)*SPACING)/2;
+const CITY_Z0 = -800;
+
+const roadMat = new THREE.MeshStandardMaterial({ color:0x1b1b1d, roughness:0.97 });
+function addRoad(w, d, x, z){
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), roadMat);
+  m.rotation.x = -Math.PI/2;
+  m.position.set(x, 0.03, z);
+  m.receiveShadow = true;
+  scene.add(m);
+}
+const cityCenterZ = CITY_Z0 + (ROWS-1)*SPACING/2;
+const cityDepth   = (ROWS-1)*SPACING + SPACING*0.8;
+const cityWidth   = (COLS-1)*SPACING + SPACING*0.8;
+for (let i=0;i<COLS-1;i++) addRoad(SPACING*0.5, cityDepth, CITY_X0 + (i+0.5)*SPACING, cityCenterZ);
+for (let j=0;j<ROWS-1;j++) addRoad(cityWidth, SPACING*0.5, 0, CITY_Z0 + (j+0.5)*SPACING);
+
+const wallTex = makeWallTextures();
+const MAX_FLOORS = 2200;
+const floorGeo = new THREE.BoxGeometry(1,1,1);
+const floorMat = new THREE.MeshStandardMaterial({
+  map: wallTex.map,
+  emissiveMap: wallTex.emissive,
+  emissive: new THREE.Color(0xffcf90),
+  emissiveIntensity: 0,
+  roughness: 0.92,
+  metalness: 0.04
+});
+const floorInst = new THREE.InstancedMesh(floorGeo, floorMat, MAX_FLOORS);
+floorInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+floorInst.castShadow = true;
+floorInst.receiveShadow = true;
+floorInst.frustumCulled = false;
+scene.add(floorInst);
+
+const ZERO_MATRIX = new THREE.Matrix4().makeScale(0.0001, 0.0001, 0.0001);
+const CHARRED  = new THREE.Color(0x1e1a17);
+const SCORCHED = new THREE.Color(0x4a4038);
+
+const buildings = [];
+let floorCursor = 0;
+
+function buildCity(){
+  for (let i=0;i<COLS;i++){
+    for (let j=0;j<ROWS;j++){
+      const x = CITY_X0 + i*SPACING;
+      const z = CITY_Z0 + j*SPACING;
+      const w = 26 + Math.random()*18;
+      const d = 26 + Math.random()*18;
+      const floors = 5 + Math.floor(Math.random()*16);
+      const fh = 3.2;
+
+      const b = {
+        x, z, w, d, floors, fh,
+        height: floors*fh,
+        idx: [], matrices: [], colors: [],
+        states: new Array(floors).fill(0),
+        ignited: new Set(),
+        fires: [],
+        population: floors*7 + Math.floor(Math.random()*30),
+        maxPopulation: 0,
+        hitTime: -1,
+        damaged: false,
+        rubble: null,
+        fireLight: null
+      };
+      b.maxPopulation = b.population;
+
+      const tint = new THREE.Color().setHSL(
+        0.07 + Math.random()*0.09, 0.05 + Math.random()*0.16, 0.72 + Math.random()*0.26);
+
+      for (let f=0; f<floors; f++){
+        const id = floorCursor++;
+        const m = new THREE.Matrix4().makeScale(w, fh, d);
+        m.setPosition(x, f*fh + fh/2, z);
+        floorInst.setMatrixAt(id, m);
+        floorInst.setColorAt(id, tint);
+        b.idx.push(id);
+        b.matrices.push(m.clone());
+        b.colors.push(tint.clone());
       }
-      flakes = [];
-      const fc = Math.round((W*H)/11000);
-      for(let i=0;i<fc;i++){
-        flakes.push(newFlake(true));
+      buildings.push(b);
+    }
+  }
+  floorInst.count = floorCursor;
+  floorInst.instanceMatrix.needsUpdate = true;
+  floorInst.instanceColor.needsUpdate = true;
+}
+buildCity();
+
+/* ================================================================
+   АУДИО
+   ================================================================ */
+let actx = null;
+function initAudio(){
+  if (actx) return;
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+}
+function noiseBuffer(dur){
+  const sr = actx.sampleRate;
+  const buf = actx.createBuffer(1, Math.max(1, Math.floor(sr*dur)), sr);
+  const d = buf.getChannelData(0);
+  for (let i=0;i<d.length;i++) d[i] = Math.random()*2 - 1;
+  return buf;
+}
+function playLaunch(){
+  initAudio(); if (!actx) return;
+  if (actx.state === 'suspended') actx.resume();
+  const t = actx.currentTime;
+  const src = actx.createBufferSource(); src.buffer = noiseBuffer(3.2);
+  const lp = actx.createBiquadFilter(); lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(180, t);
+  lp.frequency.linearRampToValueAtTime(1600, t+0.35);
+  lp.frequency.exponentialRampToValueAtTime(140, t+3.0);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.85, t+0.08);
+  g.gain.exponentialRampToValueAtTime(0.0008, t+3.0);
+  src.connect(lp).connect(g).connect(actx.destination);
+  src.start(t); src.stop(t+3.2);
+
+  const o = actx.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(95, t);
+  o.frequency.exponentialRampToValueAtTime(32, t+1.6);
+  const og = actx.createGain();
+  og.gain.setValueAtTime(0.7, t);
+  og.gain.exponentialRampToValueAtTime(0.0008, t+2.2);
+  o.connect(og).connect(actx.destination);
+  o.start(t); o.stop(t+2.3);
+}
+function playExplosion(vol = 1){
+  initAudio(); if (!actx) return;
+  if (actx.state === 'suspended') actx.resume();
+  const t = actx.currentTime;
+  const src = actx.createBufferSource(); src.buffer = noiseBuffer(4.5);
+  const lp = actx.createBiquadFilter(); lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(4200, t);
+  lp.frequency.exponentialRampToValueAtTime(110, t+3.2);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(1.0*vol, t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0008, t+3.6);
+  src.connect(lp).connect(g).connect(actx.destination);
+  src.start(t); src.stop(t+4.5);
+
+  const o = actx.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(130, t);
+  o.frequency.exponentialRampToValueAtTime(24, t+1.4);
+  const og = actx.createGain();
+  og.gain.setValueAtTime(0.95*vol, t);
+  og.gain.exponentialRampToValueAtTime(0.0008, t+1.8);
+  o.connect(og).connect(actx.destination);
+  o.start(t); o.stop(t+1.9);
+}
+
+/* ================================================================
+   ПУСКОВАЯ УСТАНОВКА (далеко от города)
+   ================================================================ */
+const LAUNCHER_POS = new THREE.Vector3(0, 0, 560);   // город: z = -800 … -240
+const ELEVATION_BASE = THREE.MathUtils.degToRad(62);
+
+const launcher = new THREE.Group();
+launcher.position.copy(LAUNCHER_POS);
+launcher.rotation.y = Math.PI;
+scene.add(launcher);
+
+// бетонная площадка
+const pad = new THREE.Mesh(
+  new THREE.CylinderGeometry(24, 25, 0.6, 40),
+  new THREE.MeshStandardMaterial({ color:0x5c5c56, roughness:0.96 })
+);
+pad.position.set(LAUNCHER_POS.x, 0.3, LAUNCHER_POS.z);
+pad.receiveShadow = true;
+scene.add(pad);
+
+const matBody  = new THREE.MeshStandardMaterial({ color:0x3e4b34, roughness:0.78, metalness:0.22 });
+const matDark  = new THREE.MeshStandardMaterial({ color:0x1b1f18, roughness:0.9,  metalness:0.15 });
+const matTire  = new THREE.MeshStandardMaterial({ color:0x121212, roughness:1.0,  metalness:0.0  });
+const matMetal = new THREE.MeshStandardMaterial({ color:0x6b7065, roughness:0.38, metalness:0.85 });
+const matGlass = new THREE.MeshStandardMaterial({ color:0x0d1620, roughness:0.12, metalness:0.95 });
+
+let erector = null;
+
+function buildLauncher(){
+  const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.4, 16), matBody);
+  chassis.position.set(0, 2.3, 0);
+  chassis.castShadow = chassis.receiveShadow = true;
+  launcher.add(chassis);
+
+  const chassis2 = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.7, 15), matDark);
+  chassis2.position.set(0, 1.6, 0);
+  chassis2.castShadow = true;
+  launcher.add(chassis2);
+
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.3, 3.4), matBody);
+  cab.position.set(0, 4.2, 6.0);
+  cab.castShadow = cab.receiveShadow = true;
+  launcher.add(cab);
+
+  const ws = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.05, 0.16), matGlass);
+  ws.position.set(0, 4.85, 7.72);
+  launcher.add(ws);
+
+  for (const s of [-1,1]){
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.35,0.2),
+      new THREE.MeshStandardMaterial({ color:0xfff0c0, emissive:0xffe090, emissiveIntensity:0.8 }));
+    l.position.set(s*1.3, 3.5, 7.75);
+    launcher.add(l);
+  }
+
+  const wheelGeo = new THREE.CylinderGeometry(1.15, 1.15, 0.95, 18);
+  wheelGeo.rotateZ(Math.PI/2);
+  for (let i=0;i<4;i++){
+    for (const s of [-1,1]){
+      const w = new THREE.Mesh(wheelGeo, matTire);
+      w.position.set(s*2.0, 1.15, -5.6 + i*3.7);
+      w.castShadow = true;
+      launcher.add(w);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,1.0,12), matMetal);
+      hub.rotation.z = Math.PI/2;
+      hub.position.copy(w.position);
+      launcher.add(hub);
+    }
+  }
+
+  const turn = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 2.9, 0.9, 28), matMetal);
+  turn.position.set(0, 3.4, -1.6);
+  turn.castShadow = turn.receiveShadow = true;
+  launcher.add(turn);
+
+  erector = new THREE.Group();
+  erector.position.set(0, 4.0, -1.6);
+  erector.rotation.x = Math.PI/2 - ELEVATION_BASE;
+  launcher.add(erector);
+
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(2.6, 14.5, 1.1), matBody);
+  rail.position.set(0, 6.2, -1.35);
+  rail.castShadow = rail.receiveShadow = true;
+  erector.add(rail);
+
+  const rail2 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 14.5, 2.4), matDark);
+  rail2.position.set(0, 6.2, -2.0);
+  erector.add(rail2);
+
+  const hyd = new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,6,10), matMetal);
+  hyd.position.set(1.6, 3.2, 0.3);
+  hyd.rotation.z = 0.25;
+  erector.add(hyd);
+
+  const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,3.5,6), matMetal);
+  ant.position.set(1.6, 5.6, 6.4);
+  launcher.add(ant);
+}
+buildLauncher();
+
+/* ================================================================
+   РАКЕТА
+   ================================================================ */
+const missileMesh = new THREE.Group();
+let missileFlame = null, missileLight = null;
+
+function buildMissile(){
+  const bodyMat = new THREE.MeshStandardMaterial({ color:0xd6d6cf, roughness:0.48, metalness:0.35 });
+  const darkMat = new THREE.MeshStandardMaterial({ color:0x26282a, roughness:0.7,  metalness:0.45 });
+  const redMat  = new THREE.MeshStandardMaterial({ color:0x8c1f1f, roughness:0.55, metalness:0.2  });
+
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 11, 22), bodyMat);
+  body.position.y = -0.5;
+  body.castShadow = true;
+  missileMesh.add(body);
+
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.95, 3.4, 22), bodyMat);
+  nose.position.y = 6.2;
+  nose.castShadow = true;
+  missileMesh.add(nose);
+
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.97, 0.97, 0.8, 22), redMat);
+  band.position.y = 2.2; missileMesh.add(band);
+  const band2 = new THREE.Mesh(new THREE.CylinderGeometry(0.97, 0.97, 0.5, 22), darkMat);
+  band2.position.y = -3.6; missileMesh.add(band2);
+
+  for (let i=0;i<4;i++){
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.2, 1.9), darkMat);
+    fin.position.y = -5.2; fin.position.z = 0.9;
+    const pivot = new THREE.Group();
+    pivot.rotation.y = i*Math.PI/2;
+    pivot.add(fin);
+    missileMesh.add(pivot);
+  }
+  const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.95, 1.0, 18), darkMat);
+  nozzle.position.y = -6.2; missileMesh.add(nozzle);
+
+  const flameMat = new THREE.MeshBasicMaterial({
+    color:0xffb347, transparent:true, opacity:0.92,
+    blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide
+  });
+  missileFlame = new THREE.Mesh(new THREE.ConeGeometry(1.1, 7, 14, 1, true), flameMat);
+  missileFlame.rotation.x = Math.PI;
+  missileFlame.position.y = -10.4;
+  missileFlame.visible = false;
+  missileMesh.add(missileFlame);
+
+  missileLight = new THREE.PointLight(0xffa040, 0, 110, 2);
+  missileLight.position.y = -7.5;
+  missileMesh.add(missileLight);
+
+  scene.add(missileMesh);
+}
+buildMissile();
+erector.add(missileMesh);
+missileMesh.position.set(0, 6.4, 0);
+missileMesh.quaternion.identity();
+
+/* ================================================================
+   ЖИТЕЛИ
+   ================================================================ */
+const RES_COUNT = 240;
+const resGeo = new THREE.CapsuleGeometry(0.32, 1.0, 4, 8);
+const resMat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.9 });
+const residentsInst = new THREE.InstancedMesh(resGeo, resMat, RES_COUNT);
+residentsInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+residentsInst.frustumCulled = false;
+residentsInst.castShadow = true;
+scene.add(residentsInst);
+
+const residents = [];
+function buildResidents(){
+  const cols = []; for (let i=0;i<COLS-1;i++) cols.push(CITY_X0 + (i+0.5)*SPACING);
+  const rows = []; for (let j=0;j<ROWS-1;j++) rows.push(CITY_Z0 + (j+0.5)*SPACING);
+  const dummyColor = new THREE.Color();
+  for (let i=0;i<RES_COUNT;i++){
+    const onX = Math.random() < 0.5;
+    const coord = onX ? cols[Math.floor(Math.random()*cols.length)]
+                      : rows[Math.floor(Math.random()*rows.length)];
+    const spanMin = onX ? CITY_Z0 - 30 : CITY_X0 - 30;
+    const spanMax = onX ? CITY_Z0 + (ROWS-1)*SPACING + 30 : CITY_X0 + (COLS-1)*SPACING + 30;
+    residents.push({
+      axisX: onX, coord,
+      pos: spanMin + Math.random()*(spanMax-spanMin),
+      spanMin, spanMax,
+      dir: Math.random() < 0.5 ? 1 : -1,
+      speed: 1.1 + Math.random()*1.7,
+      phase: Math.random()*Math.PI*2,
+      alive: true
+    });
+    dummyColor.setHSL(Math.random(), 0.35 + Math.random()*0.4, 0.32 + Math.random()*0.35);
+    residentsInst.setColorAt(i, dummyColor);
+  }
+  residentsInst.instanceColor.needsUpdate = true;
+}
+buildResidents();
+
+const _dummyObj = new THREE.Object3D();
+function updateResidents(dt, t){
+  for (let i=0;i<RES_COUNT;i++){
+    const r = residents[i];
+    if (!r.alive){
+      _dummyObj.position.set(0, -999, 0);
+      _dummyObj.scale.setScalar(0.001);
+      _dummyObj.updateMatrix();
+      residentsInst.setMatrixAt(i, _dummyObj.matrix);
+      continue;
+    }
+    r.pos += r.dir * r.speed * dt;
+    if (r.pos > r.spanMax){ r.pos = r.spanMax; r.dir = -1; }
+    if (r.pos < r.spanMin){ r.pos = r.spanMin; r.dir = 1; }
+
+    const px = r.axisX ? r.pos : r.coord;
+    const pz = r.axisX ? r.coord : r.pos;
+    const bob = Math.abs(Math.sin(t*6 + r.phase)) * 0.11;
+
+    _dummyObj.position.set(px, 0.82 + bob, pz);
+    _dummyObj.rotation.set(0, r.axisX ? (r.dir>0 ? Math.PI/2 : -Math.PI/2) : (r.dir>0 ? 0 : Math.PI), 0);
+    _dummyObj.scale.setScalar(1);
+    _dummyObj.updateMatrix();
+    residentsInst.setMatrixAt(i, _dummyObj.matrix);
+  }
+  residentsInst.instanceMatrix.needsUpdate = true;
+}
+
+/* ================================================================
+   ОГОНЬ / ДЫМ
+   ================================================================ */
+const fires = [];
+const MAX_FIRE_SPRITES = 1200;
+const fireLights = [];
+
+function spawnFireSprite(b, f, kind){
+  if (fires.length > MAX_FIRE_SPRITES) return;
+
+  const y = f*b.fh + b.fh*0.5;
+  const side = Math.floor(Math.random()*4);
+  let fx = b.x, fz = b.z;
+  if (side === 0){ fx = b.x + (Math.random()-0.5)*b.w*0.9; fz = b.z - b.d/2 - 0.6; }
+  else if (side === 1){ fx = b.x + (Math.random()-0.5)*b.w*0.9; fz = b.z + b.d/2 + 0.6; }
+  else if (side === 2){ fx = b.x - b.w/2 - 0.6; fz = b.z + (Math.random()-0.5)*b.d*0.9; }
+  else { fx = b.x + b.w/2 + 0.6; fz = b.z + (Math.random()-0.5)*b.d*0.9; }
+
+  const isFire = kind === 'fire';
+  const mat = new THREE.SpriteMaterial({
+    map: isFire ? TEX_FIRE : TEX_SMOKE,
+    transparent: true, depthWrite: false,
+    blending: isFire ? THREE.AdditiveBlending : THREE.NormalBlending,
+    opacity: isFire ? 0.95 : 0.4,
+    color: isFire ? 0xffffff : 0x8a8a8a
+  });
+  const spr = new THREE.Sprite(mat);
+  const baseScale = isFire ? (2.2 + Math.random()*3.2) : (4 + Math.random()*4);
+  spr.position.set(fx, y + Math.random()*1.2, fz);
+  spr.scale.setScalar(baseScale);
+  scene.add(spr);
+
+  const entry = {
+    sprite: spr,
+    base: spr.position.clone(),
+    baseScale, phase: Math.random()*Math.PI*2,
+    kind, t: Math.random(), riseSpeed: 0.05 + Math.random()*0.07,
+    baseOpacity: isFire ? 0.95 : 0.4
+  };
+  fires.push(entry);
+  b.fires.push(entry);
+}
+
+function spawnPlume(b){
+  if (fires.length > MAX_FIRE_SPRITES) return;
+  const px = b.x + (Math.random()-0.5)*b.w*0.9;
+  const pz = b.z + (Math.random()-0.5)*b.d*0.9;
+  const py = Math.random()*b.height*0.8 + 4;
+
+  const mat = new THREE.SpriteMaterial({
+    map: TEX_SMOKE, transparent:true, opacity:0, depthWrite:false, color:0x4c4740
+  });
+  const spr = new THREE.Sprite(mat);
+  spr.position.set(px, py, pz);
+  spr.scale.setScalar(7);
+  scene.add(spr);
+
+  const entry = {
+    sprite: spr,
+    base: new THREE.Vector3(px, py, pz),
+    baseScale: 6 + Math.random()*6,
+    rise: 130 + Math.random()*110,
+    drift: (Math.random()-0.5)*30,
+    phase: Math.random()*6.28,
+    kind: 'plume',
+    t: Math.random(),
+    riseSpeed: 1/(16 + Math.random()*14),
+    baseOpacity: 0.5 + Math.random()*0.18
+  };
+  fires.push(entry);
+  b.fires.push(entry);
+}
+
+function spawnGroundFire(b){
+  if (fires.length > MAX_FIRE_SPRITES) return;
+  const ang = Math.random()*Math.PI*2;
+  const rad = Math.max(b.w, b.d)*0.5 + Math.random()*8;
+  const px = b.x + Math.cos(ang)*rad;
+  const pz = b.z + Math.sin(ang)*rad;
+
+  const mat = new THREE.SpriteMaterial({
+    map: TEX_FIRE, transparent:true, opacity:0.9, depthWrite:false,
+    blending: THREE.AdditiveBlending
+  });
+  const spr = new THREE.Sprite(mat);
+  spr.position.set(px, 1.6 + Math.random()*2, pz);
+  const s = 3 + Math.random()*4;
+  spr.scale.setScalar(s);
+  scene.add(spr);
+
+  const entry = {
+    sprite: spr, base: spr.position.clone(), baseScale: s,
+    phase: Math.random()*6.28, kind: 'fire', t: Math.random(),
+    riseSpeed: 0, baseOpacity: 0.9
+  };
+  fires.push(entry);
+  b.fires.push(entry);
+}
+
+function igniteFloor(b, f){
+  if (b.states[f] === 1) return;
+  if (b.ignited.has(f)) return;
+  b.ignited.add(f);
+  b.states[f] = 2;
+
+  const n = 5 + Math.floor(Math.random()*3);
+  for (let i=0;i<n;i++) spawnFireSprite(b, f, 'fire');
+  spawnFireSprite(b, f, 'smoke');
+  spawnFireSprite(b, f, 'smoke');
+}
+
+function addFireLight(b){
+  if (b.fireLight) return;
+  if (fireLights.length >= 10){
+    const old = fireLights.shift();
+    for (const bb of buildings) if (bb.fireLight === old){ bb.fireLight = null; }
+    scene.remove(old);
+  }
+  const l = new THREE.PointLight(0xff7a22, 0, 130, 2);
+  l.position.set(b.x, Math.min(b.height, b.fh*5), b.z);
+  scene.add(l);
+  b.fireLight = l;
+  fireLights.push(l);
+}
+
+function clearFires(b){
+  for (const e of b.fires){
+    scene.remove(e.sprite);
+    e.sprite.material.dispose();
+    const i = fires.indexOf(e);
+    if (i >= 0) fires.splice(i, 1);
+  }
+  b.fires.length = 0;
+  if (b.fireLight){
+    scene.remove(b.fireLight);
+    const i = fireLights.indexOf(b.fireLight);
+    if (i >= 0) fireLights.splice(i, 1);
+    b.fireLight = null;
+  }
+}
+
+function updateFires(dt, t){
+  for (const e of fires){
+    if (e.kind === 'fire'){
+      const s = e.baseScale * (0.68 + 0.34*Math.sin(t*7 + e.phase) + 0.18*Math.sin(t*14.3 + e.phase*1.7));
+      e.sprite.scale.setScalar(s);
+      e.sprite.material.opacity = e.baseOpacity * (0.62 + 0.38*Math.sin(t*11 + e.phase));
+      e.sprite.position.y = e.base.y + Math.sin(t*3 + e.phase)*0.4;
+    } else if (e.kind === 'smoke'){
+      e.t += dt * e.riseSpeed * 4;
+      if (e.t > 1) e.t -= 1;
+      e.sprite.position.y = e.base.y + e.t * 32;
+      e.sprite.position.x = e.base.x + e.t * 6;
+      const s = e.baseScale * (0.6 + e.t*3.2);
+      e.sprite.scale.setScalar(s);
+      e.sprite.material.opacity = e.baseOpacity * Math.min(1, e.t*4) * (1 - e.t) * 0.95;
+    } else if (e.kind === 'plume'){
+      e.t += dt * e.riseSpeed;
+      if (e.t > 1) e.t -= 1;
+      const ty = e.t;
+      e.sprite.position.y = e.base.y + ty * e.rise;
+      e.sprite.position.x = e.base.x + ty * e.drift;
+      const s = e.baseScale * (0.65 + ty*4.4);
+      e.sprite.scale.setScalar(s);
+      e.sprite.material.opacity = e.baseOpacity * Math.min(1, ty*5) * (1 - ty);
+    }
+  }
+}
+
+/* ================================================================
+   ВЗРЫВЫ
+   ================================================================ */
+const explosions = [];
+const pendingBlasts = [];
+
+function scheduleBlast(pos, delay, scale){
+  pendingBlasts.push({ pos: pos.clone(), t: delay, scale });
+}
+
+function spawnExplosion(pos, scale = 1){
+  const light = new THREE.PointLight(0xffa040, 2800*scale, 480, 2);
+  light.position.copy(pos);
+  scene.add(light);
+
+  const flashMat = new THREE.MeshBasicMaterial({
+    color:0xffdd88, transparent:true, opacity:0.95,
+    blending:THREE.AdditiveBlending, depthWrite:false
+  });
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 14), flashMat);
+  flash.position.copy(pos);
+  scene.add(flash);
+
+  const N = 460;
+  const fPos = new Float32Array(N*3), fVel = new Float32Array(N*3), fCol = new Float32Array(N*3);
+  const tmpC = new THREE.Color();
+  for (let i=0;i<N;i++){
+    fPos[i*3] = pos.x; fPos[i*3+1] = pos.y; fPos[i*3+2] = pos.z;
+    const th = Math.random()*Math.PI*2;
+    const ph = Math.acos(Math.random()*2-1);
+    const sp = (18 + Math.random()*110) * scale;
+    fVel[i*3]   = Math.sin(ph)*Math.cos(th)*sp;
+    fVel[i*3+1] = Math.abs(Math.cos(ph))*sp*0.95 + 16;
+    fVel[i*3+2] = Math.sin(ph)*Math.sin(th)*sp;
+    tmpC.setHSL(0.045 + Math.random()*0.075, 1.0, 0.42 + Math.random()*0.32);
+    fCol[i*3] = tmpC.r; fCol[i*3+1] = tmpC.g; fCol[i*3+2] = tmpC.b;
+  }
+  const fGeo = new THREE.BufferGeometry();
+  fGeo.setAttribute('position', new THREE.BufferAttribute(fPos, 3));
+  fGeo.setAttribute('color',    new THREE.BufferAttribute(fCol, 3));
+  const fMat = new THREE.PointsMaterial({
+    size: 8*scale, map: TEX_SPARK, vertexColors: true,
+    transparent: true, blending: THREE.AdditiveBlending,
+    depthWrite: false, opacity: 1, sizeAttenuation: true
+  });
+  const fPts = new THREE.Points(fGeo, fMat);
+  fPts.frustumCulled = false;
+  scene.add(fPts);
+
+  const M = 240;
+  const sPos = new Float32Array(M*3), sVel = new Float32Array(M*3);
+  for (let i=0;i<M;i++){
+    sPos[i*3] = pos.x; sPos[i*3+1] = pos.y; sPos[i*3+2] = pos.z;
+    const th = Math.random()*Math.PI*2;
+    const sp = (6 + Math.random()*44) * scale;
+    sVel[i*3]   = Math.cos(th)*sp;
+    sVel[i*3+1] = 8 + Math.random()*34;
+    sVel[i*3+2] = Math.sin(th)*sp;
+  }
+  const sGeo = new THREE.BufferGeometry();
+  sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+  const sMat = new THREE.PointsMaterial({
+    size: 18*scale, map: TEX_SMOKE, color: 0x4a4640,
+    transparent: true, depthWrite: false, opacity: 0.6
+  });
+  const sPts = new THREE.Points(sGeo, sMat);
+  sPts.frustumCulled = false;
+  scene.add(sPts);
+
+  const debris = [];
+  const debGeo = new THREE.BoxGeometry(1,1,1);
+  const debMat = new THREE.MeshStandardMaterial({ color:0x54524c, roughness:0.95 });
+  for (let i=0;i<28;i++){
+    const m = new THREE.Mesh(debGeo, debMat);
+    const s = 0.6 + Math.random()*2.4;
+    m.scale.set(s, s*(0.4+Math.random()), s);
+    m.position.copy(pos);
+    m.castShadow = true;
+    scene.add(m);
+    const th = Math.random()*Math.PI*2;
+    const sp = 20 + Math.random()*60;
+    debris.push({
+      mesh: m,
+      vel: new THREE.Vector3(Math.cos(th)*sp, 15+Math.random()*48, Math.sin(th)*sp),
+      spin: new THREE.Vector3(Math.random()*8-4, Math.random()*8-4, Math.random()*8-4)
+    });
+  }
+
+  explosions.push({
+    light, flash, fPts, sPts, fVel, sVel, debris,
+    life: 0, maxLife: 3.6, scale
+  });
+}
+
+function updateExplosions(dt){
+  // отложенные взрывы
+  for (let i=pendingBlasts.length-1; i>=0; i--){
+    const p = pendingBlasts[i];
+    p.t -= dt;
+    if (p.t <= 0){
+      spawnExplosion(p.pos, p.scale);
+      if (Math.random() < 0.8) playExplosion(0.35);
+      pendingBlasts.splice(i,1);
+    }
+  }
+
+  for (let i=explosions.length-1; i>=0; i--){
+    const e = explosions[i];
+    e.life += dt;
+    const k = e.life / e.maxLife;
+
+    e.light.intensity = Math.max(0, 2800*e.scale * (1 - e.life/1.1));
+
+    const fs = 3 + e.life*40*e.scale;
+    e.flash.scale.setScalar(fs);
+    e.flash.material.opacity = Math.max(0, 0.95 - e.life*2.4);
+
+    const fp = e.fPts.geometry.attributes.position.array;
+    for (let p=0; p<e.fVel.length; p+=3){
+      e.fVel[p+1] -= 42*dt;
+      e.fVel[p]   *= (1 - 1.6*dt);
+      e.fVel[p+2] *= (1 - 1.6*dt);
+      fp[p]   += e.fVel[p]*dt;
+      fp[p+1] += e.fVel[p+1]*dt;
+      fp[p+2] += e.fVel[p+2]*dt;
+      if (fp[p+1] < 0.2) fp[p+1] = 0.2;
+    }
+    e.fPts.geometry.attributes.position.needsUpdate = true;
+    e.fPts.material.opacity = Math.max(0, 1 - k*1.15);
+
+    const sp = e.sPts.geometry.attributes.position.array;
+    for (let p=0; p<e.sVel.length; p+=3){
+      e.sVel[p+1] -= 3*dt;
+      e.sVel[p]   *= (1 - 0.9*dt);
+      e.sVel[p+2] *= (1 - 0.9*dt);
+      sp[p]   += e.sVel[p]*dt;
+      sp[p+1] += e.sVel[p+1]*dt;
+      sp[p+2] += e.sVel[p+2]*dt;
+    }
+    e.sPts.geometry.attributes.position.needsUpdate = true;
+    e.sPts.material.opacity = Math.max(0, 0.6*(1-k));
+    e.sPts.material.size = 18*e.scale * (1 + k*2.4);
+
+    for (const d of e.debris){
+      d.vel.y -= 32*dt;
+      d.mesh.position.addScaledVector(d.vel, dt);
+      d.mesh.rotation.x += d.spin.x*dt;
+      d.mesh.rotation.y += d.spin.y*dt;
+      d.mesh.rotation.z += d.spin.z*dt;
+      if (d.mesh.position.y < 0.3){
+        d.mesh.position.y = 0.3;
+        d.vel.multiplyScalar(0.25);
+        d.vel.y = Math.abs(d.vel.y)*0.3;
+        d.spin.multiplyScalar(0.5);
       }
     }
-    function newFlake(anywhere){
+
+    if (e.life > e.maxLife){
+      scene.remove(e.light, e.flash, e.fPts, e.sPts);
+      e.flash.geometry.dispose(); e.flash.material.dispose();
+      e.fPts.geometry.dispose(); e.fPts.material.dispose();
+      e.sPts.geometry.dispose(); e.sPts.material.dispose();
+      for (const d of e.debris) scene.remove(d.mesh);
+      explosions.splice(i, 1);
+    }
+  }
+}
+
+/* ================================================================
+   СЛЕД РАКЕТЫ
+   ================================================================ */
+const trailPool = [];
+const TRAIL_MAX = 180;
+let trailIdx = 0;
+for (let i=0;i<TRAIL_MAX;i++){
+  const mat = new THREE.SpriteMaterial({
+    map: TEX_SMOKE, transparent:true, opacity:0,
+    depthWrite:false, color:0xc0c0c0
+  });
+  const s = new THREE.Sprite(mat);
+  s.visible = false;
+  scene.add(s);
+  trailPool.push({ sprite:s, life:0, maxLife:1.6, baseScale:3 });
+}
+function spawnTrail(pos){
+  const e = trailPool[trailIdx];
+  trailIdx = (trailIdx + 1) % TRAIL_MAX;
+  e.sprite.position.copy(pos);
+  e.sprite.visible = true;
+  e.life = 0;
+  e.maxLife = 1.4 + Math.random()*1.0;
+  e.baseScale = 1.8 + Math.random()*1.6;
+  e.sprite.scale.setScalar(e.baseScale);
+  e.sprite.material.opacity = 0.78;
+}
+function updateTrail(dt){
+  for (const e of trailPool){
+    if (!e.sprite.visible) continue;
+    e.life += dt;
+    const k = e.life / e.maxLife;
+    if (k >= 1){ e.sprite.visible = false; e.sprite.material.opacity = 0; continue; }
+    e.sprite.scale.setScalar(e.baseScale * (1 + k*4.8));
+    e.sprite.material.opacity = 0.78 * (1 - k) * (1 - k);
+  }
+}
+
+/* ================================================================
+   СОСТОЯНИЕ
+   ================================================================ */
+const state = {
+  mode: 'aim',
+  aimYaw: Math.PI,
+  aimPitch: 0.20,
+  cooldown: 0,
+  returnTimer: 0,
+  destroyed: 0,
+  killed: 0,
+  elapsed: 0,
+  trailTimer: 0,
+  impactPoint: null,
+  impactDir: new THREE.Vector3()
+};
+
+const missile = {
+  active: false, yaw: 0, pitch: 0, speed: 0,
+  pos: new THREE.Vector3(),
+  dir: new THREE.Vector3(0,1,0),
+  age: 0
+};
+
+const obs = {
+  pos: new THREE.Vector3(LAUNCHER_POS.x, 90, LAUNCHER_POS.z),
+  yaw: Math.PI, pitch: -0.35
+};
+
+function currentElevation(){
+  return THREE.MathUtils.clamp(ELEVATION_BASE + (state.aimPitch - 0.2)*0.9, 0.55, 1.4);
+}
+
+/* ================================================================
+   УПРАВЛЕНИЕ
+   ================================================================ */
+const keys = {};
+let pointerLocked = false;
+const overlay = document.getElementById('overlay');
+
+overlay.addEventListener('click', () => {
+  initAudio();
+  if (actx && actx.state === 'suspended') actx.resume();
+  canvas.requestPointerLock();
+});
+
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = (document.pointerLockElement === canvas);
+  overlay.classList.toggle('hidden', pointerLocked);
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!pointerLocked) return;
+  handleMouse(e.movementX || 0, e.movementY || 0);
+});
+
+function handleMouse(dx, dy){
+  if (state.mode === 'aim'){
+    state.aimYaw   -= dx * 0.0026;
+    state.aimPitch += dy * 0.0018;
+    state.aimPitch = THREE.MathUtils.clamp(state.aimPitch, -0.18, 0.95);
+  } else if (state.mode === 'fly'){
+    missile.yaw   -= dx * 0.0021;
+    missile.pitch -= dy * 0.0021;
+    missile.pitch = THREE.MathUtils.clamp(missile.pitch, -0.6, 1.52);
+  } else if (state.mode === 'observe'){
+    obs.yaw   -= dx * 0.0024;
+    obs.pitch -= dy * 0.0024;
+    obs.pitch = THREE.MathUtils.clamp(obs.pitch, -1.45, 1.45);
+  }
+}
+
+addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'KeyF') tryFire();
+  if (e.code === 'KeyV') enterObserve();
+  if (e.code === 'KeyQ') exitObserve();
+  if (['KeyW','KeyA','KeyS','KeyD','Space'].includes(e.code)) e.preventDefault();
+});
+addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+/* ================================================================
+   ПУСК
+   ================================================================ */
+function tryFire(){
+  if (state.mode !== 'aim') return;
+  if (state.cooldown > 0) return;
+
+  launcher.updateMatrixWorld(true);
+  missileMesh.updateMatrixWorld(true);
+  scene.attach(missileMesh);
+
+  const wp = new THREE.Vector3();
+  missileMesh.getWorldPosition(wp);
+  missile.pos.copy(wp);
+
+  missile.active = true;
+  missile.yaw = state.aimYaw;
+  missile.pitch = currentElevation();
+  missile.speed = 26;
+  missile.age = 0;
+
+  missileFlame.visible = true;
+  missileLight.intensity = 8;
+  missileMesh.visible = true;
+
+  state.mode = 'fly';
+  state.cooldown = 30;
+
+  playLaunch();
+}
+
+function updateMissile(dt){
+  missile.age += dt;
+  missile.speed = Math.min(190, 26 + missile.age*54);
+
+  // мягкая гравитация — ракета сама начинает заваливаться вниз
+  missile.pitch -= 0.11 * dt;
+  missile.pitch = THREE.MathUtils.clamp(missile.pitch, -0.6, 1.52);
+
+  const cp = Math.cos(missile.pitch);
+  missile.dir.set(
+    Math.sin(missile.yaw) * cp,
+    Math.sin(missile.pitch),
+    Math.cos(missile.yaw) * cp
+  ).normalize();
+
+  const eul = new THREE.Euler(Math.PI/2 - missile.pitch, missile.yaw, 0, 'YXZ');
+  missileMesh.quaternion.setFromEuler(eul);
+
+  const fl = 0.8 + Math.sin(missile.age*40)*0.18;
+  missileFlame.scale.set(fl, 1 + Math.sin(missile.age*33)*0.3, fl);
+  missileFlame.material.opacity = 0.75 + Math.sin(missile.age*55)*0.2;
+
+  state.trailTimer += dt;
+  if (state.trailTimer > 0.028){
+    state.trailTimer = 0;
+    const tail = missile.pos.clone().addScaledVector(missile.dir, -6.5);
+    spawnTrail(tail);
+  }
+
+  const steps = Math.max(1, Math.ceil(missile.speed * dt / 3.5));
+  const sdt = dt / steps;
+  for (let s=0; s<steps; s++){
+    missile.pos.addScaledVector(missile.dir, missile.speed * sdt);
+    const hit = checkHit(missile.pos);
+    if (hit){ doImpact(hit); return; }
+  }
+
+  // защита от бесконечного полёта
+  if (missile.age > 22){
+    doImpact({ type:'ground', point: missile.pos.clone() });
+    return;
+  }
+
+  missileMesh.position.copy(missile.pos);
+}
+
+function checkHit(p){
+  if (p.y <= 0.6) return { type:'ground', point: p.clone() };
+  for (const b of buildings){
+    const hw = b.w/2, hd = b.d/2;
+    if (p.x > b.x-hw && p.x < b.x+hw && p.z > b.z-hd && p.z < b.z+hd && p.y < b.height){
       return {
-        x: Math.random()*W,
-        y: anywhere ? Math.random()*H : -20,
-        r: 1 + Math.random()*3.2,
-        sp: 0.4 + Math.random()*1.5,
-        dr: -0.3 + Math.random()*0.6,
-        sw: 0.4 + Math.random()*1.2,
-        ph: Math.random()*6.283,
-        a: 0.35 + Math.random()*0.6
+        type:'building', building: b, point: p.clone(),
+        floor: Math.min(b.floors-1, Math.max(0, Math.floor(p.y / b.fh)))
       };
     }
-    let t0 = performance.now();
-    function drawSky(now){
-      const t = now - t0;
-      ctx.clearRect(0,0,W,H);
-      for(const s of stars){
-        const a = 0.25 + 0.75*Math.abs(Math.sin(t/1400 + s.ph));
-        ctx.globalAlpha = a;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      for(const f of flakes){
-        f.y += f.sp;
-        f.x += Math.sin(t/900 + f.ph)*f.sw + f.dr;
-        if(f.y > H + 20){ Object.assign(f, newFlake(false)); }
-        if(f.x < -20) f.x = W + 20; if(f.x > W + 20) f.x = -20;
-        ctx.globalAlpha = f.a;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      requestAnimationFrame(drawSky);
+  }
+  return null;
+}
+
+/* ================================================================
+   ПОПАДАНИЕ / РАЗРУШЕНИЯ
+   ================================================================ */
+const _pos = new THREE.Vector3(), _q = new THREE.Quaternion(),
+      _scl = new THREE.Vector3(), _eul = new THREE.Euler(), _mat4 = new THREE.Matrix4();
+
+function collapseFloor(b, f, vanish){
+  if (vanish){
+    floorInst.setMatrixAt(b.idx[f], ZERO_MATRIX);
+  } else {
+    const cx = b.x + (Math.random()-0.5)*5;
+    const cz = b.z + (Math.random()-0.5)*5;
+    const cy = f*b.fh + b.fh*0.18;
+    const sx = b.w * (0.42 + Math.random()*0.45);
+    const sy = b.fh * (0.14 + Math.random()*0.2);
+    const sz = b.d * (0.42 + Math.random()*0.45);
+    _eul.set((Math.random()-0.5)*0.4, Math.random()*Math.PI, (Math.random()-0.5)*0.4);
+    _q.setFromEuler(_eul);
+    _pos.set(cx, cy, cz);
+    _scl.set(sx, sy, sz);
+    _mat4.compose(_pos, _q, _scl);
+    floorInst.setMatrixAt(b.idx[f], _mat4);
+  }
+  floorInst.setColorAt(b.idx[f], CHARRED);
+  b.states[f] = 1;
+}
+
+function tiltFloor(b, f, ang){
+  const m = b.matrices[f].clone();
+  m.decompose(_pos, _q, _scl);
+  _eul.set((Math.random()-0.5)*ang, (Math.random()-0.5)*ang*0.5, (Math.random()-0.5)*ang);
+  _q.multiply(new THREE.Quaternion().setFromEuler(_eul));
+  _mat4.compose(_pos, _q, _scl);
+  floorInst.setMatrixAt(b.idx[f], _mat4);
+}
+
+function createRubble(b){
+  if (b.rubble) return;
+  const N = 55;
+  const geo = new THREE.BoxGeometry(1,1,1);
+  const mat = new THREE.MeshStandardMaterial({ color:0x37332d, roughness:1, metalness:0.02 });
+  const im = new THREE.InstancedMesh(geo, mat, N);
+  im.castShadow = true;
+  im.receiveShadow = true;
+  const d = new THREE.Object3D();
+  for (let i=0;i<N;i++){
+    const ang = Math.random()*Math.PI*2;
+    const rad = Math.random()*Math.max(b.w,b.d)*0.75 + 3;
+    const s = 1 + Math.random()*3.6;
+    d.position.set(
+      b.x + Math.cos(ang)*rad,
+      s*0.28 + Math.random()*0.6,
+      b.z + Math.sin(ang)*rad
+    );
+    d.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+    d.scale.set(s, s*(0.35+Math.random()*0.7), s);
+    d.updateMatrix();
+    im.setMatrixAt(i, d.matrix);
+  }
+  im.instanceMatrix.needsUpdate = true;
+  scene.add(im);
+  b.rubble = im;
+}
+
+function damageBuilding(b, floor){
+  b.hitTime = state.elapsed;
+  if (!b.damaged){ b.damaged = true; state.destroyed++; }
+
+  // ---- ядро взрыва: обрушение ----
+  const core0 = Math.max(0, floor-2), core1 = Math.min(b.floors-1, floor+2);
+  for (let f=core0; f<=core1; f++){
+    if (b.states[f] === 1) continue;
+    collapseFloor(b, f, Math.random() < 0.55);
+  }
+
+  // ---- кольцо: обугливание + возгорание ----
+  const ring0 = Math.max(0, floor-5), ring1 = Math.min(b.floors-1, floor+6);
+  for (let f=ring0; f<=ring1; f++){
+    if (b.states[f] === 1) continue;
+    if (b.states[f] === 0){
+      b.states[f] = 3;
+      floorInst.setColorAt(b.idx[f], SCORCHED);
+      tiltFloor(b, f, 0.05);
     }
+    igniteFloor(b, f);
+  }
 
-    /* ---------- Параллакс (3D Санта) ---------- */
-    window.addEventListener('pointermove', e => {
-      const nx = (e.clientX / window.innerWidth - 0.5);
-      const ny = (e.clientY / window.innerHeight - 0.5);
-      document.documentElement.style.setProperty('--ry', (nx*14) + 'deg');
-      document.documentElement.style.setProperty('--rx', (-ny*12) + 'deg');
-    });
+  floorInst.instanceMatrix.needsUpdate = true;
+  floorInst.instanceColor.needsUpdate = true;
 
-    /* ---------- Экран приветствия ---------- */
-    startBtn.addEventListener('click', enterChat);
-    nameInput.addEventListener('keydown', e => { if(e.key === 'Enter') enterChat(); });
+  // ---- обломки у подножия ----
+  createRubble(b);
 
-    function enterChat(){
-      if(!db){ toast('⚠️ Нет подключения к базе данных — проверьте интернет и обновите страницу.'); return; }
-      const name = nameInput.value.trim();
-      if(!name){
-        nameInput.classList.remove('shake'); void nameInput.offsetWidth; nameInput.classList.add('shake');
-        nameInput.focus();
-        return;
-      }
-      startChat(name);
+  // ---- дымовые столбы ----
+  const plumes = 4 + Math.floor(Math.random()*4);
+  for (let i=0;i<plumes;i++) spawnPlume(b);
+
+  // ---- огонь по земле ----
+  const groundFires = 4 + Math.floor(Math.random()*5);
+  for (let i=0;i<groundFires;i++) spawnGroundFire(b);
+
+  // ---- свет от пожара ----
+  addFireLight(b);
+
+  // ---- вторичные взрывы ----
+  const secondaries = 3 + Math.floor(Math.random()*4);
+  for (let i=0;i<secondaries;i++){
+    const p = new THREE.Vector3(
+      b.x + (Math.random()-0.5)*b.w,
+      Math.min(b.height - 1, (floor + (Math.random()*8-4))*b.fh),
+      b.z + (Math.random()-0.5)*b.d
+    );
+    scheduleBlast(p, 0.25 + Math.random()*2.0, 0.55 + Math.random()*0.5);
+  }
+
+  // ---- жертвы ----
+  const killed = Math.floor(b.population * (0.62 + Math.random()*0.28));
+  b.population = Math.max(0, b.population - killed);
+  state.killed += killed;
+}
+
+function doImpact(hit){
+  const pos = missile.pos.clone();
+
+  spawnExplosion(pos, 1.15);
+  playExplosion(0.9);
+
+  if (hit.type === 'building'){
+    damageBuilding(hit.building, hit.floor);
+  } else {
+    for (const b of buildings){
+      const dx = b.x - pos.x, dz = b.z - pos.z;
+      if (dx*dx + dz*dz < 62*62) damageBuilding(b, Math.floor(b.floors*0.25));
     }
+  }
 
-    function startChat(name){
-      currentName = name;
-      isSanta = (name === 'Дед Мороз');
-      rememberName(name);
-      document.body.classList.toggle('mode-santa', isSanta);
-
-      // Настройка заголовка
-      if(isSanta){
-        chatAvatar.textContent = '🎅';
-        chatTitle.textContent = 'Дед Мороз';
-        chatSub.textContent = 'Выберите пользователя в панели 👥 · время МСК';
-        clearBtn.classList.remove('hidden');
-        usersBtn.classList.remove('hidden');
-        santaHint.classList.remove('hidden');
-      }else{
-        chatAvatar.textContent = '⛄';
-        chatTitle.textContent = 'Дед Мороз';
-        chatSub.textContent = 'Новогодний чат ✨ · время МСК';
-        clearBtn.classList.add('hidden');
-        usersBtn.classList.add('hidden');
-        santaHint.classList.add('hidden');
-      }
-
-      switchScreen(welcomeScreen, chatScreen);
-      document.body.classList.add('in-chat');
-
-      activeUserKey = null;
-      activeUserName = '';
-
-      // Присутствие
-      if(isSanta){
-        presenceCb = db.ref('presence').on('value', renderPresence);
-      }else{
-        startPresence(name);
-      }
-
-      attachMessages();
-
-      setTimeout(() => msgInput.focus(), 400);
+  // гибель жителей рядом
+  for (let i=0;i<RES_COUNT;i++){
+    const r = residents[i];
+    if (!r.alive) continue;
+    const px = r.axisX ? r.pos : r.coord;
+    const pz = r.axisX ? r.coord : r.pos;
+    const dx = px - pos.x, dz = pz - pos.z;
+    if (dx*dx + dz*dz < 62*62){
+      r.alive = false;
+      state.killed++;
     }
+  }
 
-    function switchScreen(from, to){
-      from.classList.add('leaving');
-      setTimeout(() => {
-        from.classList.add('hidden');
-        from.classList.remove('leaving');
-        to.classList.remove('hidden');
-      }, 280);
+  missile.active = false;
+  missileMesh.visible = false;
+  missileFlame.visible = false;
+  missileLight.intensity = 0;
+
+  state.impactPoint = pos;
+  state.impactDir.copy(missile.dir);
+  state.mode = 'impact';
+  state.returnTimer = 5;
+}
+
+function resetMissile(){
+  missile.active = false;
+  missileMesh.visible = true;
+  missileFlame.visible = false;
+  missileLight.intensity = 0;
+
+  erector.attach(missileMesh);
+  missileMesh.position.set(0, 6.4, 0);
+  missileMesh.quaternion.identity();
+  missileMesh.scale.setScalar(1);
+}
+
+/* ================================================================
+   ВОССТАНОВЛЕНИЕ
+   ================================================================ */
+const RESTORE_TIME = 15 * 60;
+
+function restoreBuilding(b){
+  for (let f=0; f<b.floors; f++){
+    floorInst.setMatrixAt(b.idx[f], b.matrices[f]);
+    floorInst.setColorAt(b.idx[f], b.colors[f]);
+    b.states[f] = 0;
+  }
+  floorInst.instanceMatrix.needsUpdate = true;
+  floorInst.instanceColor.needsUpdate = true;
+  clearFires(b);
+  b.ignited.clear();
+
+  if (b.rubble){
+    scene.remove(b.rubble);
+    b.rubble.geometry.dispose();
+    b.rubble.material.dispose();
+    b.rubble = null;
+  }
+
+  b.population = b.maxPopulation;
+  b.damaged = false;
+  b.hitTime = -1;
+}
+
+function updateBuildings(){
+  for (const b of buildings){
+    if (b.hitTime >= 0 && state.elapsed - b.hitTime >= RESTORE_TIME){
+      restoreBuilding(b);
     }
+  }
+}
 
-    function chatRoot(){
-      if(isSanta){
-        return activeUserKey ? ('chats/' + activeUserKey) : '';
-      }
-      return 'chats/' + userKey(currentName);
+/* ================================================================
+   ОБЗОР
+   ================================================================ */
+function enterObserve(){
+  if (state.mode !== 'aim') return;
+  state.mode = 'observe';
+  obs.pos.copy(camera.position);
+  obs.yaw = state.aimYaw;
+  obs.pitch = -0.28;
+  document.getElementById('crosshair').classList.add('on');
+}
+function exitObserve(){
+  if (state.mode !== 'observe') return;
+  state.mode = 'aim';
+  document.getElementById('crosshair').classList.remove('on');
+}
+
+function updateObserveCamera(dt){
+  const speed = (keys['ShiftLeft'] || keys['ShiftRight'] ? 190 : 65);
+  const fwd = new THREE.Vector3(
+    Math.sin(obs.yaw) * Math.cos(obs.pitch),
+    Math.sin(obs.pitch),
+    Math.cos(obs.yaw) * Math.cos(obs.pitch)
+  ).normalize();
+  const right = new THREE.Vector3(fwd.z, 0, -fwd.x).normalize();
+
+  const move = new THREE.Vector3();
+  if (keys['KeyW']) move.add(fwd);
+  if (keys['KeyS']) move.sub(fwd);
+  if (keys['KeyD']) move.add(right);
+  if (keys['KeyA']) move.sub(right);
+  if (keys['Space']) move.y += 1;
+  if (keys['ControlLeft']) move.y -= 1;
+
+  if (move.lengthSq() > 0){
+    move.normalize().multiplyScalar(speed * dt);
+    obs.pos.add(move);
+  }
+  obs.pos.y = Math.max(3, Math.min(900, obs.pos.y));
+
+  camera.position.copy(obs.pos);
+  camera.lookAt(obs.pos.clone().add(fwd));
+}
+
+/* ================================================================
+   КАМЕРА
+   ================================================================ */
+const camLookAt = new THREE.Vector3(LAUNCHER_POS.x, 10, LAUNCHER_POS.z - 100);
+const _tmpV = new THREE.Vector3();
+
+function updateCamera(dt){
+  if (state.mode === 'observe'){ updateObserveCamera(dt); return; }
+
+  if (state.mode === 'fly'){
+    const back = missile.dir.clone().multiplyScalar(-30);
+    const up = new THREE.Vector3(0, 1, 0).multiplyScalar(9);
+    _tmpV.copy(missile.pos).add(back).add(up);
+    camera.position.lerp(_tmpV, 1 - Math.exp(-dt*8));
+    _tmpV.copy(missile.pos).addScaledVector(missile.dir, 40);
+    camLookAt.lerp(_tmpV, 1 - Math.exp(-dt*6));
+    camera.lookAt(camLookAt);
+    return;
+  }
+
+  if (state.mode === 'impact' && state.impactPoint){
+    const target = state.impactPoint;
+    _tmpV.copy(target)
+      .addScaledVector(state.impactDir, -95)
+      .add(new THREE.Vector3(55, 60, 55));
+    camera.position.lerp(_tmpV, 1 - Math.exp(-dt*1.3));
+    camLookAt.lerp(target, 1 - Math.exp(-dt*2.6));
+    camera.lookAt(camLookAt);
+    return;
+  }
+
+  // aim
+  const yaw = state.aimYaw, p = state.aimPitch;
+  const facing = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+  const camPos = LAUNCHER_POS.clone()
+    .addScaledVector(facing, -34)
+    .add(new THREE.Vector3(0, 17 + p*26, 0));
+  const lookPos = LAUNCHER_POS.clone()
+    .addScaledVector(facing, 95)
+    .add(new THREE.Vector3(0, 16 + p*60, 0));
+
+  const k = 1 - Math.exp(-dt*5);
+  camera.position.lerp(camPos, k);
+  camLookAt.lerp(lookPos, k);
+  camera.lookAt(camLookAt);
+}
+
+/* ================================================================
+   ДЕНЬ / НОЧЬ
+   ================================================================ */
+const CYCLE = 600;
+const DAY_COLOR    = new THREE.Color(0x8fbde8);
+const NIGHT_COLOR  = new THREE.Color(0x060a14);
+const SUNSET_COLOR = new THREE.Color(0xff7733);
+const _sky = new THREE.Color();
+
+function updateDayNight(){
+  const t = (state.elapsed % CYCLE) / CYCLE;
+  const ang = t * Math.PI * 2;
+  const elev = Math.sin(ang);
+  const daylight = THREE.MathUtils.smoothstep(elev, -0.13, 0.26);
+
+  const dir = new THREE.Vector3(Math.cos(ang), elev, 0.34).normalize();
+  sun.position.copy(sun.target.position).addScaledVector(dir, 1700);
+
+  if (elev > -0.02){
+    sun.color.setHSL(0.09 + Math.max(0, 1 - Math.abs(elev)*2.4)*0.03, 0.5, 0.55 + daylight*0.18);
+    sun.intensity = 0.15 + daylight * 2.6;
+  } else {
+    sun.color.set(0x4466aa);
+    sun.intensity = 0.13;
+  }
+
+  hemi.intensity = 0.10 + daylight * 0.62;
+
+  _sky.copy(NIGHT_COLOR).lerp(DAY_COLOR, daylight);
+  const horizonGlow = Math.max(0, 1 - Math.abs(elev) / 0.26);
+  _sky.lerp(SUNSET_COLOR, horizonGlow * 0.55 * (0.35 + daylight * 0.65));
+
+  scene.background = _sky;
+  scene.fog.color.copy(_sky);
+
+  starMat.opacity = Math.max(0, 1 - daylight * 1.8);
+  floorMat.emissiveIntensity = (1 - daylight) * 1.9;
+
+  return t;
+}
+
+/* ================================================================
+   HUD
+   ================================================================ */
+const elDestroyed = document.getElementById('statDestroyed');
+const elKilled    = document.getElementById('statKilled');
+const elClock     = document.getElementById('clock');
+const elPhase     = document.getElementById('phase');
+const elStatus    = document.getElementById('status');
+const elCrosshair = document.getElementById('crosshair');
+
+let hudTick = 0;
+
+function updateHUD(dt, dayT){
+  hudTick += dt;
+
+  const hours = (6 + dayT * 24) % 24;
+  const hh = Math.floor(hours);
+  const mm = Math.floor((hours - hh) * 60);
+  elClock.textContent = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+  elPhase.textContent = (hours > 6 && hours < 19) ? 'День' : 'Ночь';
+
+  if (hudTick < 0.08) return;
+  hudTick = 0;
+
+  elDestroyed.textContent = state.destroyed;
+  elKilled.textContent = state.killed;
+
+  if (state.mode === 'aim'){
+    elStatus.innerHTML = state.cooldown > 0
+      ? `<span class="hot">ПЕРЕЗАРЯДКА: ${state.cooldown.toFixed(1)} с</span>`
+      : `<span class="ready">ГОТОВ К ПУСКУ — нажмите F</span>`;
+  } else if (state.mode === 'fly'){
+    elStatus.textContent = 'УПРАВЛЕНИЕ РАКЕТОЙ — мышь';
+  } else if (state.mode === 'observe'){
+    elStatus.textContent = 'РЕЖИМ ОБЗОРА — WASD / Shift · Q — к установке';
+  } else if (state.mode === 'impact'){
+    elStatus.textContent = `Возврат к установке... ${Math.ceil(state.returnTimer)}`;
+  }
+
+  elCrosshair.classList.toggle('on', state.mode === 'observe');
+}
+
+/* ================================================================
+   ЦИКЛ
+   ================================================================ */
+let lastTime = performance.now();
+let worldTime = 0;
+
+function animate(){
+  requestAnimationFrame(animate);
+
+  const now = performance.now();
+  let dt = (now - lastTime) / 1000;
+  lastTime = now;
+  dt = Math.min(dt, 0.05);
+  worldTime += dt;
+  state.elapsed += dt;
+
+  const dayT = updateDayNight();
+
+  if (state.cooldown > 0) state.cooldown = Math.max(0, state.cooldown - dt);
+
+  if (state.mode === 'fly' && missile.active) updateMissile(dt);
+
+  if (state.mode === 'impact'){
+    state.returnTimer -= dt;
+    if (state.returnTimer <= 0){
+      resetMissile();
+      state.mode = 'aim';
+      state.impactPoint = null;
     }
+  }
 
-    function attachMessages(){
-      if(msgQuery){ msgQuery.off(); msgQuery = null; }
-      messages.clear();
-      messagesEl.innerHTML = '';
-      stickBottom = true;
-      const root = chatRoot();
-      if(!root){
-        renderEmptyState('👥', 'Выберите пользователя', 'Откройте панель «Пользователи» и выберите, с кем пообщаться.');
-        return;
-      }
-      msgQuery = db.ref(root + '/messages').orderByChild('timestamp').limitToLast(200);
-      msgQuery.on('child_added', snap => {
-        messages.set(snap.key, Object.assign({id: snap.key}, snap.val()));
-        renderMessages();
-      });
-      msgQuery.on('child_changed', snap => {
-        messages.set(snap.key, Object.assign({id: snap.key}, snap.val()));
-        renderMessages();
-      });
-      msgQuery.on('child_removed', snap => {
-        messages.delete(snap.key);
-        renderMessages();
-      });
-      renderMessages();
-    }
+  launcher.rotation.y = state.aimYaw;
+  erector.rotation.x = Math.PI/2 - currentElevation();
 
-    function renderEmptyState(em, title, sub){
-      const e = document.createElement('div');
-      e.className = 'empty-state';
-      e.innerHTML = '<div class="em">' + em + '</div><div class="t">' + title + '</div><div class="s">' + sub + '</div>';
-      messagesEl.appendChild(e);
-    }
+  updateCamera(dt);
+  updateFires(dt, worldTime);
+  updateExplosions(dt);
+  updateTrail(dt);
+  updateResidents(dt, worldTime);
+  updateBuildings();
+  updateHUD(dt, dayT);
 
-    function selectUser(u, silent){
-      activeUserKey = userKey(u.name);
-      activeUserName = u.name;
-      chatSub.textContent = 'Чат с ' + u.name + ' · время МСК';
-      attachMessages();
-      if(!silent) toast('Чат с «' + u.name + '» открыт');
-    }
+  // мерцание света от пожаров
+  for (const l of fireLights){
+    l.intensity = 60 + Math.sin(worldTime*13 + l.position.x)*25 + Math.sin(worldTime*31 + l.position.z)*18;
+  }
 
-    /* ---------- Выход ---------- */
-    backBtn.addEventListener('click', exitChat);
-    function exitChat(){
-      stopPresence();
-      if(msgQuery){ msgQuery.off(); msgQuery = null; }
-      if(isSanta && presenceCb){ db.ref('presence').off('value', presenceCb); presenceCb = null; }
-      messages.clear();
-      messagesEl.innerHTML = '';
-      isSanta = false;
-      currentName = '';
-      activeUserKey = null;
-      activeUserName = '';
-      forgetName();
-      document.body.classList.remove('mode-santa');
-      document.body.classList.remove('in-chat');
-      closePanelFn();
-      switchScreen(chatScreen, welcomeScreen);
-      nameInput.value = '';
-      setTimeout(() => nameInput.focus(), 400);
-    }
+  renderer.render(scene, camera);
+}
 
-    /* ---------- Присутствие ---------- */
-    function startPresence(name){
-      const key = userKey(name);
-      presenceRef = db.ref('presence/' + key);
-      const onlineData = { name: name, online: true, lastSeen: firebase.database.ServerValue.TIMESTAMP };
-      const offlineData = { name: name, online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP };
-      presenceRef.onDisconnect().set(offlineData);
-      presenceRef.set(onlineData);
-      heartbeat = setInterval(() => presenceRef.set(onlineData), 20000);
-    }
-    function stopPresence(){
-      if(heartbeat){ clearInterval(heartbeat); heartbeat = null; }
-      if(presenceRef){
-        presenceRef.onDisconnect().cancel();
-        presenceRef.set({ name: currentName, online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
-        presenceRef = null;
-      }
-    }
+camera.position.set(LAUNCHER_POS.x, 22, LAUNCHER_POS.z + 44);
+camera.lookAt(LAUNCHER_POS.x, 10, LAUNCHER_POS.z - 80);
 
-    function renderPresence(snap){
-      const data = snap.val() || {};
-      presenceEntries = Object.values(data).filter(u => u && u.name);
-      presenceEntries.sort((a,b) => {
-        if(!!a.online !== !!b.online) return a.online ? -1 : 1;
-        return (b.lastSeen || 0) - (a.lastSeen || 0);
-      });
-      let online = 0;
-      panelList.innerHTML = '';
-      if(!presenceEntries.length){
-        panelList.innerHTML = '<div class="panel-empty">Пока никто не заходил в чат 🎄</div>';
-        onlineBadge.classList.add('hidden');
-        panelSub.textContent = 'Пока никого нет';
-        return;
-      }
-      for(const u of presenceEntries){
-        if(u.online) online++;
-        const row = document.createElement('div');
-        row.className = 'user-row' + (u.online ? ' online' : '');
-        row.dataset.name = u.name;
-        if(isSanta && activeUserKey === userKey(u.name)) row.classList.add('active');
-
-        const left = document.createElement('div');
-        left.className = 'u-left';
-        const name = document.createElement('div');
-        name.className = 'u-name';
-        const dot = document.createElement('span');
-        dot.className = 'dot';
-        name.appendChild(dot);
-        name.appendChild(document.createTextNode(u.name));
-        const status = document.createElement('div');
-        status.className = 'u-status';
-        status.textContent = u.online ? 'в сети сейчас' : 'был(а) в сети: ' + shortWhen(u.lastSeen);
-        left.appendChild(name);
-        left.appendChild(status);
-        row.appendChild(left);
-
-        if(isSanta){
-          const open = document.createElement('span');
-          open.className = 'u-open';
-          open.textContent = 'Открыть ›';
-          row.appendChild(open);
-        }
-        panelList.appendChild(row);
-      }
-      onlineBadge.textContent = online;
-      onlineBadge.classList.remove('hidden');
-      panelSub.textContent = 'Онлайн: ' + online + ' · Всего: ' + presenceEntries.length;
-
-      // Автовыбор первого пользователя при первом входе
-      if(isSanta && !activeUserKey){
-        selectUser(presenceEntries[0], true);
-      }
-    }
-
-    /* ---------- Сообщения ---------- */
-    messagesEl.addEventListener('scroll', () => {
-      stickBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 90;
-    });
-
-    function renderMessages(){
-      messagesEl.innerHTML = '';
-      const sorted = Array.from(messages.values()).sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
-      if(!sorted.length){
-        const e = document.createElement('div');
-        e.className = 'empty-state';
-        e.innerHTML = '<div class="em">🎄</div><div class="t">Здесь пока тихо…</div><div class="s">Напишите первое новогоднее сообщение! (время — МСК)</div>';
-        messagesEl.appendChild(e);
-        return;
-      }
-      let lastKey = null;
-      for(const m of sorted){
-        const dk = mskKey(m.timestamp || Date.now());
-        if(dk !== lastKey){
-          const sep = document.createElement('div');
-          sep.className = 'date-sep';
-          const span = document.createElement('span');
-          span.textContent = dateLabel(m.timestamp || Date.now());
-          sep.appendChild(span);
-          messagesEl.appendChild(sep);
-          lastKey = dk;
-        }
-        messagesEl.appendChild(buildMessage(m));
-      }
-      if(stickBottom) messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function buildMessage(m){
-      const own = m.name === currentName;
-      const row = document.createElement('div');
-      row.className = 'msg' + (own ? ' own' : '');
-      row.dataset.id = m.id;
-      const wrap = document.createElement('div');
-      wrap.className = 'bubble-wrap';
-      if(!own){
-        const sender = document.createElement('div');
-        sender.className = 'sender';
-        sender.textContent = m.name;
-        wrap.appendChild(sender);
-      }
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      const text = document.createElement('div');
-      text.className = 'text';
-      text.textContent = m.text;
-      const time = document.createElement('div');
-      time.className = 'time';
-      time.textContent = mskTime(m.timestamp || Date.now());
-      bubble.appendChild(text);
-      bubble.appendChild(time);
-      wrap.appendChild(bubble);
-      row.appendChild(wrap);
-      return row;
-    }
-
-    function sendMessage(){
-      const text = msgInput.value.trim();
-      if(!text || !db) return;
-      if(isSanta && !activeUserKey){ toast('Сначала выберите пользователя в панели 👥'); return; }
-      db.ref(chatRoot() + '/messages').push({
-        name: currentName,
-        text: text,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-      });
-      msgInput.value = '';
-      msgInput.focus();
-    }
-    sendBtn.addEventListener('click', sendMessage);
-    msgInput.addEventListener('keydown', e => { if(e.key === 'Enter') sendMessage(); });
-
-    /* ---------- Удаление сообщения (долгое нажатие) ---------- */
-    let pressTimer = null, pressTarget = null, pressX = 0, pressY = 0;
-
-    function findMsg(el){ return el && el.closest ? el.closest('.msg') : null; }
-
-    function onPressStart(e){
-      if(!isSanta) return;
-      const msg = findMsg(e.target);
-      if(!msg) return;
-      if(e.pointerType === 'mouse' && e.button !== 0) return;
-      pressTarget = msg;
-      pressX = e.clientX; pressY = e.clientY;
-      pressTimer = setTimeout(() => {
-        msg.classList.add('pressing');
-        if(navigator.vibrate) navigator.vibrate(15);
-        showDeleteMenu(msg, pressX, pressY);
-      }, 520);
-    }
-    function onPressMove(e){
-      if(!pressTimer) return;
-      if(Math.abs(e.clientX - pressX) > 12 || Math.abs(e.clientY - pressY) > 12){
-        cancelPress();
-      }
-    }
-    function onPressEnd(){
-      cancelPress();
-    }
-    function cancelPress(){
-      if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; }
-      if(pressTarget){ pressTarget.classList.remove('pressing'); pressTarget = null; }
-    }
-
-    messagesEl.addEventListener('pointerdown', onPressStart);
-    messagesEl.addEventListener('pointermove', onPressMove);
-    messagesEl.addEventListener('pointerup', onPressEnd);
-    messagesEl.addEventListener('pointercancel', onPressEnd);
-    messagesEl.addEventListener('contextmenu', e => {
-      if(!isSanta) return;
-      const msg = findMsg(e.target);
-      if(!msg) return;
-      e.preventDefault();
-      showDeleteMenu(msg, e.clientX, e.clientY);
-    });
-
-    function showDeleteMenu(msg, x, y){
-      const id = msg.dataset.id;
-      deleteMenu.dataset.id = id;
-      deleteMenu.classList.remove('hidden');
-      const rect = deleteMenu.getBoundingClientRect();
-      let px = x, py = y + 12;
-      if(px + rect.width > window.innerWidth - 10) px = window.innerWidth - rect.width - 10;
-      if(py + rect.height > window.innerHeight - 10) py = y - rect.height - 10;
-      if(px < 10) px = 10; if(py < 10) py = 10;
-      deleteMenu.style.left = px + 'px';
-      deleteMenu.style.top = py + 'px';
-    }
-    function hideDeleteMenu(){ deleteMenu.classList.add('hidden'); }
-    deleteBtn.addEventListener('click', () => {
-      const id = deleteMenu.dataset.id;
-      hideDeleteMenu();
-      if(id && db && isSanta && activeUserKey){
-        db.ref(chatRoot() + '/messages/' + id).remove();
-      }
-    });
-    document.addEventListener('pointerdown', e => {
-      if(!deleteMenu.classList.contains('hidden') && !deleteMenu.contains(e.target)){
-        hideDeleteMenu();
-      }
-    });
-
-    /* ---------- Очистить чат ---------- */
-    clearBtn.addEventListener('click', () => {
-      if(isSanta && !activeUserKey){ toast('Сначала выберите пользователя в панели 👥'); return; }
-      const who = isSanta ? ('чат с ' + activeUserName) : 'ваш чат';
-      showConfirm('Очистить ' + who + '?', 'Все сообщения в этом чате будут удалены. Это действие нельзя отменить.', () => {
-        db.ref(chatRoot() + '/messages').remove().catch(() => toast('Не удалось очистить чат'));
-      });
-    });
-
-    /* ---------- Модалка ---------- */
-    let modalAction = null;
-    function showConfirm(title, text, onOk){
-      modalTitle.textContent = title;
-      modalText.textContent = text;
-      modalAction = onOk;
-      modalOverlay.classList.add('open');
-    }
-    modalCancel.addEventListener('click', () => { modalOverlay.classList.remove('open'); modalAction = null; });
-    modalOk.addEventListener('click', () => {
-      modalOverlay.classList.remove('open');
-      if(modalAction){ const a = modalAction; modalAction = null; a(); }
-    });
-    modalOverlay.addEventListener('click', e => {
-      if(e.target === modalOverlay){ modalOverlay.classList.remove('open'); modalAction = null; }
-    });
-
-    /* ---------- Панель пользователей ---------- */
-    usersBtn.addEventListener('click', openPanelFn);
-    closePanel.addEventListener('click', closePanelFn);
-    drawerOverlay.addEventListener('click', closePanelFn);
-    panelList.addEventListener('click', e => {
-      const row = e.target.closest('.user-row');
-      if(!row || !row.dataset.name) return;
-      selectUser({ name: row.dataset.name });
-      closePanelFn();
-    });
-    function openPanelFn(){ presencePanel.classList.add('open'); drawerOverlay.classList.add('open'); }
-    function closePanelFn(){ presencePanel.classList.remove('open'); drawerOverlay.classList.remove('open'); }
-
-    /* ---------- Toast ---------- */
-    let toastTimer = null;
-    function toast(msg){
-      toastEl.textContent = msg;
-      toastEl.classList.add('show');
-      if(toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
-    }
-
-    /* ---------- Служебное ---------- */
-    window.addEventListener('resize', initSky);
-    window.addEventListener('beforeunload', () => {
-      if(heartbeat){ clearInterval(heartbeat); }
-      if(presenceRef){
-        // onDisconnect сработает автоматически при закрытии вкладки
-        presenceRef.set({ name: currentName, online: false, lastSeen: firebase.database.ServerValue.TIMESTAMP });
-      }
-    });
-
-    // Инициализация
-    initSky();
-    requestAnimationFrame(drawSky);
-    const savedName = recallName();
-    if(savedName && db){
-      nameInput.value = savedName;
-      startChat(savedName);
-    }else{
-      nameInput.focus();
-    }
-  })();
-  </script>
+animate();
+</script>
 </body>
 </html>
